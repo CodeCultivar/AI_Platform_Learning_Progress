@@ -1,8 +1,8 @@
 {
  "title": "90-Day AI Platform Engineer Plan",
- "intro": "You build one deployed, tested, monitored LLM assistant in 11 weeks, then spend Week 12 applying. It starts tonight, Tue Nov 3, 2026. Each week lists what to do each day, the links you need and what done looks like.",
+ "intro": "You build one deployed, tested, monitored LLM assistant in 11 weeks, then spend Week 12 applying. Each week lists what to do each day, the links you need and what done looks like.",
  "kickoff": {
-  "summary": "By the end of tonight you have a Python project on GitHub with a running FastAPI app and one passing test. You need no Azure account and no API key yet.",
+  "summary": "By the end of the kickoff you have a Python project on GitHub with a running FastAPI app and one passing test. You need no Azure account and no API key yet.",
   "steps": [
    {
     "label": "10 min, repository",
@@ -50,7 +50,7 @@
   ],
   "done": "`pytest` passes on your machine and the code is visible on GitHub.",
   "notes": [],
-  "title": "Start tonight (Tue Nov 3): a 90-minute kickoff"
+  "title": "Day 1 kickoff: your first 90 minutes"
  },
  "changed": {
   "title": "What changed from the first plan",
@@ -62,7 +62,7 @@
    {
     "t": "ul",
     "items": [
-     "**Gate 1 moves up to Nov 13.** Your quiz score (11 of 12) and your Terraform experience say concepts are not your problem, so the first gate tests the real gap: writing Python from a blank folder.",
+     "**Gate 1 moves up to the end of Week 2.** Your quiz score (11 of 12) and your Terraform experience say concepts are not your problem, so the first gate tests the real gap: writing Python from a blank folder.",
      "**Deploy by hand, then automate.** In Week 6 you deploy manually to see every step, and in Week 7 you turn those steps into Terraform. This is faster than learning both at once.",
      "**Terraform gets one week, not two.** You already own Terraform, so the saved time goes to Python and the LLM work.",
      "**Evaluation, cost and monitoring are built in.** Hiring teams for AI platform roles ask how you know the app works and what it costs. You will have numbers for both.",
@@ -83,7 +83,7 @@
     "t": "ul",
     "items": [
      "**Personal accounts only.** Use your personal GitHub account and a personal Azure subscription. Do not use Kroger code, data, credentials or subscriptions, and build the retrieval app on public documents. If you are unsure whether your employer allows outside projects, check the policy before you start.",
-     "**Azure credit timing.** Azure free accounts typically include a $200 credit that lasts 30 days, but confirm the current terms when you sign up. That is why you create the account in Week 3, not tonight: the credit then covers Weeks 3 to 7, which is when you deploy the most. After it ends, you pay as you go, so create a budget alert the day you sign up and delete the resource group after each deployment session.",
+     "**Azure credit timing.** Azure free accounts typically include a $200 credit that lasts 30 days, but confirm the current terms when you sign up. That is why you create the account in Week 3, not on day 1: the credit then covers Weeks 3 to 7, which is when you deploy the most. After it ends, you pay as you go, so create a budget alert the day you sign up and delete the resource group after each deployment session.",
      "**AI tools are your tutor, not your typist.** Use Claude or Copilot to explain errors, review your code and quiz you. Do not paste in whole solutions. If AI wrote a piece of code, you must be able to explain every line of it. Gates 1 and 3 are done with no AI code generation, and docs are allowed."
     ]
    },
@@ -98,7 +98,7 @@
    "summary": "Build a small, tested web API that will become your LLM app.",
    "steps": [
     {
-     "label": "Tue (tonight)",
+     "label": "Day 1",
      "text": "do the kickoff above."
     },
     {
@@ -136,11 +136,9 @@
    "done": "`/health` and `/ask` work, you have at least 4 passing tests, and everything is pushed to GitHub with a README that explains how to run it.",
    "notes": [],
    "n": 1,
-   "dates": "Nov 3 to 6",
    "topic": "Python project setup, FastAPI and tests",
-   "start": "2026-11-03",
-   "end": "2026-11-06",
-   "title": "Week 1 (Nov 3 to 6): Python project setup, FastAPI and tests"
+   "title": "Week 1: Python project setup, FastAPI and tests",
+   "light": false
   },
   {
    "summary": "Make `/ask` return a real model answer, then prove you can rebuild it without help.",
@@ -185,11 +183,9 @@
    "done": "`/ask` returns a model answer, your tests run offline, and you pass Gate 1. If you miss it, repeat the blank-folder build the next Monday and tell me where you got stuck.",
    "notes": [],
    "n": 2,
-   "dates": "Nov 9 to 13",
    "topic": "call an LLM from your API, Gate 1",
-   "start": "2026-11-09",
-   "end": "2026-11-13",
-   "title": "Week 2 (Nov 9 to 13): call an LLM from your API, Gate 1",
+   "title": "Week 2: call an LLM from your API, Gate 1",
+   "light": false,
    "gate": 1
   },
   {
@@ -238,14 +234,12 @@
    "done": "`retrieve(question, 3)` returns the right source for at least 7 of your 10 test questions, and your budget alert exists.",
    "notes": [],
    "n": 3,
-   "dates": "Nov 16 to 20",
    "topic": "Azure account, embeddings and retrieval",
-   "start": "2026-11-16",
-   "end": "2026-11-20",
-   "title": "Week 3 (Nov 16 to 20): Azure account, embeddings and retrieval"
+   "title": "Week 3: Azure account, embeddings and retrieval",
+   "light": false
   },
   {
-   "summary": "This is a three-session week because of Thanksgiving. Move your retrieval from a local file to a managed Azure service.",
+   "summary": "This is a three-session week: the original schedule put it on Thanksgiving week, and it suits any week when you have less time. Move your retrieval from a local file to a managed Azure service.",
    "steps": [
     {
      "label": "Mon",
@@ -282,11 +276,9 @@
    "done": "Azure AI Search answers at least as many of your 10 test questions correctly as your local version, and your settings are written down.",
    "notes": [],
    "n": 4,
-   "dates": "Nov 23 to 27, light week",
    "topic": "Azure AI Search",
-   "start": "2026-11-23",
-   "end": "2026-11-27",
-   "title": "Week 4 (Nov 23 to 27, light week): Azure AI Search"
+   "title": "Week 4: Azure AI Search",
+   "light": true
   },
   {
    "summary": "Join retrieval and the model into one app, then measure how good the answers are.",
@@ -327,11 +319,9 @@
    "done": "`python eval.py` prints a pass rate and writes a CSV, and you pass Gate 2. Weeks 6 to 9 assume this app works, so if you miss the gate, repeat this week instead of moving on.",
    "notes": [],
    "n": 5,
-   "dates": "Nov 30 to Dec 4",
    "topic": "full RAG app and evaluation, Gate 2",
-   "start": "2026-11-30",
-   "end": "2026-12-04",
-   "title": "Week 5 (Nov 30 to Dec 4): full RAG app and evaluation, Gate 2",
+   "title": "Week 5: full RAG app and evaluation, Gate 2",
+   "light": false,
    "gate": 2
   },
   {
@@ -380,11 +370,9 @@
    "done": "the public URL answered a question, `DEPLOY_NOTES.md` lists every step, and the resource group is deleted.",
    "notes": [],
    "n": 6,
-   "dates": "Dec 7 to 11",
    "topic": "Docker and a manual deploy to Azure Container Apps",
-   "start": "2026-12-07",
-   "end": "2026-12-11",
-   "title": "Week 6 (Dec 7 to 11): Docker and a manual deploy to Azure Container Apps"
+   "title": "Week 6: Docker and a manual deploy to Azure Container Apps",
+   "light": false
   },
   {
    "summary": "This is the week your existing skills do the heavy lifting. Turn Week 6's manual steps into Terraform, with no secrets in code.",
@@ -423,17 +411,15 @@
    ],
    "done": "one `terraform apply` builds everything, the app answers a question, `terraform destroy` removes it all, and no secret value appears in your Terraform files or in git history.",
    "notes": [
-    "**Break: Dec 21 to Jan 2.** No studying. Make sure everything is destroyed so nothing bills while you are away."
+    "**Before any break** (the original schedule pauses Dec 21 to Jan 2; set yours under Schedule): no studying, and make sure everything is destroyed so nothing bills while you are away."
    ],
    "n": 7,
-   "dates": "Dec 14 to 18",
    "topic": "Terraform, Key Vault and managed identity",
-   "start": "2026-12-14",
-   "end": "2026-12-18",
-   "title": "Week 7 (Dec 14 to 18): Terraform, Key Vault and managed identity"
+   "title": "Week 7: Terraform, Key Vault and managed identity",
+   "light": false
   },
   {
-   "summary": "After the break, spend Monday rebuilding the environment from your own notes. Then make every push test and deploy the app automatically, with no stored passwords.",
+   "summary": "After a break, spend the first day rebuilding the environment from your own notes. Then make every push test and deploy the app automatically, with no stored passwords.",
    "steps": [
     {
      "label": "Mon",
@@ -471,11 +457,9 @@
    "done": "merging to `main` deploys the app, the infrastructure can be rebuilt from Terraform, and you pass Gate 3 with no AI code generation for the workflow itself.",
    "notes": [],
    "n": 8,
-   "dates": "Jan 4 to 8",
    "topic": "GitHub Actions deployment, Gate 3",
-   "start": "2027-01-04",
-   "end": "2027-01-08",
-   "title": "Week 8 (Jan 4 to 8): GitHub Actions deployment, Gate 3",
+   "title": "Week 8: GitHub Actions deployment, Gate 3",
+   "light": false,
    "gate": 3
   },
   {
@@ -520,11 +504,9 @@
    "done": "you can answer latency, error rate and cost per day from your own logs, and a change that makes answers worse fails the pull request.",
    "notes": [],
    "n": 9,
-   "dates": "Jan 11 to 15",
    "topic": "monitoring, cost tracking and evaluation in CI",
-   "start": "2027-01-11",
-   "end": "2027-01-15",
-   "title": "Week 9 (Jan 11 to 15): monitoring, cost tracking and evaluation in CI"
+   "title": "Week 9: monitoring, cost tracking and evaluation in CI",
+   "light": false
   },
   {
    "summary": "Let the model decide when to search your documents or call a function, and make that safe and measurable.",
@@ -564,11 +546,9 @@
    "done": "the agent picks the right action on all 5 new evaluation cases, every tool call is logged, and it stops after the step limit instead of looping.",
    "notes": [],
    "n": 10,
-   "dates": "Jan 18 to 22",
    "topic": "an agent with tool calling",
-   "start": "2027-01-18",
-   "end": "2027-01-22",
-   "title": "Week 10 (Jan 18 to 22): an agent with tool calling"
+   "title": "Week 10: an agent with tool calling",
+   "light": false
   },
   {
    "summary": "Expose your retrieval to other AI tools through MCP, then make the project easy for a stranger to run and judge.",
@@ -609,11 +589,9 @@
    "done": "a client calls your MCP tool successfully, your README works for someone else, and you can explain every design choice in the mock interview.",
    "notes": [],
    "n": 11,
-   "dates": "Jan 25 to 29",
    "topic": "MCP server, polish, Gate 4",
-   "start": "2027-01-25",
-   "end": "2027-01-29",
-   "title": "Week 11 (Jan 25 to 29): MCP server, polish, Gate 4",
+   "title": "Week 11: MCP server, polish, Gate 4",
+   "light": false,
    "gate": 4
   },
   {
@@ -645,11 +623,9 @@
    "done": "10 applications are submitted, 2 mock interviews are done, and your resume and LinkedIn show the project.",
    "notes": [],
    "n": 12,
-   "dates": "Feb 1 to 5",
    "topic": "resume, mock interviews and applications",
-   "start": "2027-02-01",
-   "end": "2027-02-05",
-   "title": "Week 12 (Feb 1 to 5): resume, mock interviews and applications"
+   "title": "Week 12: resume, mock interviews and applications",
+   "light": false
   }
  ],
  "links": [

@@ -4,7 +4,9 @@ import { Ring } from './components/Inline.jsx'
 import { Dashboard, Kickoff, Week, Gates, Links, Guide, After, Search } from './components/Views.jsx'
 import SyncPanel from './components/SyncPanel.jsx'
 import Home from './components/Home.jsx'
-import { loadState, saveState, pct, weekTaskIds, kickoffIds, taskIds, searchPlan, currentWeek, mergeStates, normalizeState, resetState, sameState } from './lib.js'
+import SchedulePanel from './components/SchedulePanel.jsx'
+import { SchedCtx } from './schedule-context.js'
+import { loadState, saveState, pct, weekTaskIds, kickoffIds, taskIds, searchPlan, currentWeek, buildSchedule, mergeStates, normalizeState, resetState, sameState } from './lib.js'
 import { loadConfig, saveConfig, clearConfig, syncOnce } from './sync.js'
 
 function useHash() {
@@ -26,6 +28,7 @@ export default function App() {
   const [cfg, setCfg] = useState(loadConfig)
   const [status, setStatus] = useState({ state: 'off', msg: '', last: null })
   const [showSync, setShowSync] = useState(false)
+  const [showSched, setShowSched] = useState(false)
   const stRef = useRef(st); stRef.current = st
   const cfgRef = useRef(cfg); cfgRef.current = cfg
   const busy = useRef(false); const again = useRef(false)
@@ -81,9 +84,11 @@ export default function App() {
     return { ...s, notes, ts: { ...s.ts, ['n:' + k]: Date.now() } }
   })
 
+  const sched = useMemo(() => buildSchedule(st.settings.schedule), [st.settings.schedule])
+  const saveSchedule = (cfg) => { setSt((s) => ({ ...s, settings: { ...s.settings, schedule: cfg }, ts: { ...s.ts, 's:schedule': Date.now() } })); setShowSched(false) }
   const results = useMemo(() => searchPlan(q), [q])
   const route = hash.replace(/^#\/?/, '').split('/')
-  const cw = currentWeek()
+  const cw = currentWeek(sched)
   const total = pct(taskIds(), st.checked)
 
   const exportData = () => {
@@ -108,13 +113,14 @@ export default function App() {
   else if (route[0] === 'links') view = <Links />
   else if (route[0] === 'guide') view = <Guide />
   else if (route[0] === 'after') view = <After />
-  else if (route[0] === 'dashboard') view = <Dashboard st={st} toggle={toggle} />
-  else view = <Home />
+  else if (route[0] === 'dashboard') view = <Dashboard st={st} toggle={toggle} onSchedule={() => setShowSched(true)} />
+  else view = <Home onSchedule={() => setShowSched(true)} />
 
   const active = (r) => (route[0] === r ? 'active' : '')
   const isWeek = (n) => route[0] === 'week' && Number(route[1]) === n
 
   return (
+    <SchedCtx.Provider value={sched}>
     <div className="shell">
       <a className="skip" href="#main">Skip to content</a>
       <button className="menu-btn" onClick={() => setMenu(!menu)} aria-expanded={menu} aria-label="Toggle navigation">☰ <span>{total}% done</span></button>
@@ -125,7 +131,7 @@ export default function App() {
           <a className={route[0] === '' || route[0] === undefined ? 'active' : ''} href="#/" onClick={() => setQ('')}>Home</a>
           <a className={active('dashboard')} href="#/dashboard" onClick={() => setQ('')}>Dashboard</a>
           <a className={active('kickoff')} href="#/kickoff" onClick={() => setQ('')}>
-            Kickoff · tonight <em>{pct(kickoffIds(), st.checked)}%</em>
+            Kickoff · day 1 <em>{pct(kickoffIds(), st.checked)}%</em>
           </a>
           <p className="nav-h">Weeks</p>
           {plan.weeks.map((w) => (
@@ -144,13 +150,16 @@ export default function App() {
           <button onClick={exportData}>Export</button>
           <button onClick={() => fileRef.current.click()}>Import</button>
           <button onClick={reset} className="danger">Reset</button>
+          <button className="sync-btn" onClick={() => setShowSched(true)}>Schedule · {sched.hours} h/week</button>
           <button className={`sync-btn ${status.state}`} onClick={() => setShowSync(true)}>{cfg ? (status.state === 'error' ? 'Sync problem' : status.state === 'syncing' ? 'Syncing…' : 'Synced ✓') : 'Sync devices'}</button>
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={importData} />
           <p>{cfg ? 'Progress syncs through your private gist.' : 'Progress is saved in this browser. Turn on Sync to share it across devices.'}</p>
         </div>
       </aside>
       <main id="main">{view}</main>
+      {showSched && <SchedulePanel value={st.settings.schedule} onSave={saveSchedule} onClose={() => setShowSched(false)} />}
       {showSync && <SyncPanel cfg={cfg} status={status} onConnect={connect} onDisconnect={disconnect} onSyncNow={runSync} onClose={() => setShowSync(false)} />}
     </div>
+    </SchedCtx.Provider>
   )
 }

@@ -1,4 +1,6 @@
 import { SOURCES } from '../data/sources.js'
+import { useSched } from '../schedule-context.js'
+import { fmtDay } from '../lib.js'
 
 const jump = (id) => (e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
 
@@ -20,7 +22,8 @@ const ROLES = [
   { role: 'Agentic / AI Automation Engineer', fit: '8.5', demand: 'Fast-growing', pay: 'Widest range', odds: 'Good', stab: 'Lowest' },
 ]
 
-export default function Home() {
+export default function Home({ onSchedule }) {
+  const sched = useSched()
   const toc = [['what', 'What this is'], ['research', 'The research behind it'], ['sync', 'How sync works'], ['limits', 'Limits and risks'], ['cert', 'Certification'], ['sources', 'All sources']]
   return (
     <>
@@ -39,11 +42,12 @@ export default function Home() {
 
       <section id="what">
         <h2>What this is</h2>
-        <p>A step-by-step plan to build one deployed, tested, monitored LLM assistant in 11 weeks, then spend Week 12 applying for jobs. It started Tue Nov 3, 2026 and runs to Fri Feb 5, 2027, at about 5 hours a week.</p>
+        <p>A step-by-step plan to build one deployed, tested, monitored LLM assistant in 11 weeks, then spend Week 12 applying for jobs. The plan is written for about 5 hours a week. <b>Your schedule:</b> {fmtDay(sched.start)} to {fmtDay(sched.end)} at about {sched.hours} hours a week. <button className="linklike" onClick={onSchedule}>Adjust start date, pace and breaks</button></p>
         <ul className="plain">
           <li><b>Kickoff:</b> a 90-minute first session that ends with a running FastAPI app and one passing test.</li>
           <li><b>Weeks 1 to 12:</b> daily steps, the links you need, and a “done when” check for each week.</li>
           <li><b>Four gates:</b> hard checkpoints in Weeks 2, 5, 8 and 11. If you miss one, repeat that week instead of moving on.</li>
+          <li><b>Your timeframe:</b> set the start date, the pace and any breaks, and every date on the site follows.</li>
           <li><b>Tracking:</b> tick tasks off, keep a log per week, and see the dashboard fill in.</li>
         </ul>
         <p className="note">Where you start (my estimate from your answers, not sourced data): you design and own Terraform and Azure, your Python is scripts and automation, your AI experience is using AI tools, and your data experience is SQL. That is why the plan front-loads Python and LLM work and gives Terraform one week.</p>
@@ -113,7 +117,7 @@ export default function Home() {
           <li><b>Push only if needed.</b> If the merged result differs from the gist, the site updates it (<code>PATCH /gists/{'{id}'}</code>) <Cite n={2} />. If not, it sends nothing.</li>
           <li><b>When it runs.</b> About 1.5 seconds after you stop editing, when you return to the tab, and once a minute while the tab is visible.</li>
         </ol>
-        <p>Because the merge is per item, ticking Week 3 on your laptop and Week 4 on your phone leaves both ticks in place.</p>
+        <p>Because the merge is per item, ticking Week 3 on your laptop and Week 4 on your phone leaves both ticks in place. Your schedule settings (start date, pace, breaks) sync the same way, so every device shows the same dates.</p>
 
         <h3>What was tested</h3>
         <p>16 automated tests cover the merge rules (different edits combine, newest wins, un-checks and reset propagate, merging twice changes nothing) and the sync round trip against a fake GitHub. I also ran two separate browser profiles against a mock of the gist API: a tick in one appeared in the other, and the second one's edits came back. <b>I have not run it against the real GitHub API yet</b>, so your first connection is the real test.</p>

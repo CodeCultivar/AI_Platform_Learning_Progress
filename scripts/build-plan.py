@@ -55,18 +55,14 @@ def unit(sec):
                 out["notes"].append(t)
     return out
 
-START = {1:"2026-11-03",2:"2026-11-09",3:"2026-11-16",4:"2026-11-23",5:"2026-11-30",6:"2026-12-07",
-         7:"2026-12-14",8:"2027-01-04",9:"2027-01-11",10:"2027-01-18",11:"2027-01-25",12:"2027-02-01"}
-END = {1:"2026-11-06"}  # others are Mon+4 (Friday)
-import datetime as dt
-def fri(s): return (dt.date.fromisoformat(s)+dt.timedelta(days=4)).isoformat()
+# Dates are NOT stored in the data: src/lib.js builds them from the user's schedule settings.
 
 plan = {"title": title, "intro": intro, "kickoff": None, "changed": None, "rules": None,
         "weeks": [], "links": [], "after": None}
 for s in sections:
     t = s["title"]
     m = re.match(r"Week (\d+) \((.*?)\)(?:, | )?:? ?(.*)", t)
-    if t.startswith("Start tonight"):
+    if t.startswith("Day 1 kickoff"):
         u = unit(s); u["title"] = t; plan["kickoff"] = u
     elif t.startswith("What changed"):
         plan["changed"] = {"title": t, "blocks": s["blocks"]}
@@ -76,7 +72,7 @@ for s in sections:
         n = int(m.group(1)); u = unit(s)
         full = t.split("):", 1)
         topic = full[1].strip() if len(full) > 1 else m.group(3)
-        u.update({"n": n, "dates": m.group(2), "topic": topic, "start": START[n], "end": END.get(n, fri(START[n])), "title": t})
+        u.update({"n": n, "topic": topic, "title": f"Week {n}: {topic}", "light": "light week" in m.group(2)})
         # gate detection
         for st in u["steps"]:
             g = re.search(r"Gate (\d)", st["label"])
@@ -97,4 +93,4 @@ for s in sections:
 pathlib.Path(root.parent / "src/data/plan.json").write_text(json.dumps(plan, indent=1, ensure_ascii=False))
 print(len(plan["weeks"]), "weeks;", len(plan["links"]), "links; kickoff steps", len(plan["kickoff"]["steps"]))
 for w in plan["weeks"]:
-    print(w["n"], w["dates"], "|", w["topic"][:50], "| steps", len(w["steps"]), "| links", len(w["links"]), "| done", bool(w["done"]), "| notes", len(w["notes"]), "| gate", w.get("gate"))
+    print(w["n"], w["light"], "|", w["topic"][:50], "| steps", len(w["steps"]), "| links", len(w["links"]), "| done", bool(w["done"]), "| notes", len(w["notes"]), "| gate", w.get("gate"))

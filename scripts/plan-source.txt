@@ -1,20 +1,20 @@
 
 # 90-Day AI Platform Engineer Plan
  · 
-You build one deployed, tested, monitored LLM assistant in 11 weeks, then spend Week 12 applying. It starts tonight, Tue Nov 3, 2026. Each week lists what to do each day, the links you need and what done looks like.
-## Start tonight (Tue Nov 3): a 90-minute kickoff
-By the end of tonight you have a Python project on GitHub with a running FastAPI app and one passing test. You need no Azure account and no API key yet.
+You build one deployed, tested, monitored LLM assistant in 11 weeks, then spend Week 12 applying. Each week lists what to do each day, the links you need and what done looks like.
+## Day 1 kickoff: your first 90 minutes
+By the end of the kickoff you have a Python project on GitHub with a running FastAPI app and one passing test. You need no Azure account and no API key yet.
 - **10 min, repository:** on your personal GitHub account, create a private repository named `ai-platform-project` with a README that says what you are building. Clone it to your computer.
 - **15 min, environment:** run `python3 --version` (you need 3.10 or newer), then create and activate a virtual environment with `python3 -m venv .venv`. Install the tools with `pip install "fastapi[standard]" pytest httpx`, then save them with `pip freeze &gt; requirements.txt`.
 - **20 min, first API:** create `main.py` with a FastAPI app and one `GET /health` endpoint that returns `{"status": "ok"}`. Start it with `fastapi dev` and open `http://127.0.0.1:8000/docs` to see the automatic documentation.
 - **20 min, first test:** create `tests/test_health.py` that uses FastAPI's `TestClient` to call `/health` and check the status code and body. Run `pytest` until it passes.
 - **10 min, commit:** add a `.gitignore` containing `.venv` and `.env`, then commit and push.
 - **10 min, log:** create `PROGRESS.md` and write the date, what worked and what blocked you.
-**Links for tonight:** [[LINK https://realpython.com/python-virtual-environments-a-complete-guide/|Python virtual environments guide]], [[LINK https://fastapi.tiangolo.com/tutorial/first-steps/|FastAPI first steps]], [[LINK https://fastapi.tiangolo.com/tutorial/testing/|FastAPI testing]], [[LINK https://docs.pytest.org/en/9.0.x/getting-started.html|pytest getting started]].
+**Links for the kickoff:** [[LINK https://realpython.com/python-virtual-environments-a-complete-guide/|Python virtual environments guide]], [[LINK https://fastapi.tiangolo.com/tutorial/first-steps/|FastAPI first steps]], [[LINK https://fastapi.tiangolo.com/tutorial/testing/|FastAPI testing]], [[LINK https://docs.pytest.org/en/9.0.x/getting-started.html|pytest getting started]].
 **Done when:** `pytest` passes on your machine and the code is visible on GitHub.
 ## What changed from the first plan
 You still have 5 hours a week, so the speedup comes from sequencing, not extra hours. The project now finishes in Week 11 instead of Week 12, which leaves a full week to apply.
-- **Gate 1 moves up to Nov 13.** Your quiz score (11 of 12) and your Terraform experience say concepts are not your problem, so the first gate tests the real gap: writing Python from a blank folder.
+- **Gate 1 moves up to the end of Week 2.** Your quiz score (11 of 12) and your Terraform experience say concepts are not your problem, so the first gate tests the real gap: writing Python from a blank folder.
 - **Deploy by hand, then automate.** In Week 6 you deploy manually to see every step, and in Week 7 you turn those steps into Terraform. This is faster than learning both at once.
 - **Terraform gets one week, not two.** You already own Terraform, so the saved time goes to Python and the LLM work.
 - **Evaluation, cost and monitoring are built in.** Hiring teams for AI platform roles ask how you know the app works and what it costs. You will have numbers for both.
@@ -23,12 +23,12 @@ You still have 5 hours a week, so the speedup comes from sequencing, not extra h
 ## Ground rules
 Three rules keep this safe, cheap and honest.
 - **Personal accounts only.** Use your personal GitHub account and a personal Azure subscription. Do not use Kroger code, data, credentials or subscriptions, and build the retrieval app on public documents. If you are unsure whether your employer allows outside projects, check the policy before you start.
-- **Azure credit timing.** Azure free accounts typically include a $200 credit that lasts 30 days, but confirm the current terms when you sign up. That is why you create the account in Week 3, not tonight: the credit then covers Weeks 3 to 7, which is when you deploy the most. After it ends, you pay as you go, so create a budget alert the day you sign up and delete the resource group after each deployment session.
+- **Azure credit timing.** Azure free accounts typically include a $200 credit that lasts 30 days, but confirm the current terms when you sign up. That is why you create the account in Week 3, not on day 1: the credit then covers Weeks 3 to 7, which is when you deploy the most. After it ends, you pay as you go, so create a budget alert the day you sign up and delete the resource group after each deployment session.
 - **AI tools are your tutor, not your typist.** Use Claude or Copilot to explain errors, review your code and quiz you. Do not paste in whole solutions. If AI wrote a piece of code, you must be able to explain every line of it. Gates 1 and 3 are done with no AI code generation, and docs are allowed.
 Pluralsight through Kroger is a good backup when a concept won't click. Use at most one course per week, and only on that week's topic.
 ## Week 1 (Nov 3 to 6): Python project setup, FastAPI and tests
 Build a small, tested web API that will become your LLM app.
-- **Tue (tonight):** do the kickoff above.
+- **Day 1:** do the kickoff above.
 - **Wed:** add a `POST /ask` endpoint that takes a question and returns a placeholder answer. Define the request and response as Pydantic models so FastAPI validates them.
 - **Thu:** write tests for `/ask`: a valid question returns 200, and an empty question returns 422. Keep every test independent of the others.
 - **Fri:** check-in and teach-back. Then spend 30 minutes reading what an embedding is and why it is stored as a vector. This closes the one quiz question you missed.
@@ -53,7 +53,7 @@ Turn documents into searchable vectors and prove retrieval finds the right passa
 **Links:** [[LINK https://azure.microsoft.com/free|Azure free account]], [[LINK https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets|Create and manage budgets]], [[LINK https://learn.microsoft.com/en-us/azure/foundry-classic/quickstarts/get-started-code|Foundry quickstart (project, model, chat)]], [[LINK https://learn.microsoft.com/en-us/azure/search/retrieval-augmented-generation-overview|Azure AI Search RAG overview]].
 **Done when:** `retrieve(question, 3)` returns the right source for at least 7 of your 10 test questions, and your budget alert exists.
 ## Week 4 (Nov 23 to 27, light week): Azure AI Search
-This is a three-session week because of Thanksgiving. Move your retrieval from a local file to a managed Azure service.
+This is a three-session week: the original schedule put it on Thanksgiving week, and it suits any week when you have less time. Move your retrieval from a local file to a managed Azure service.
 - **Mon:** create a resource group for the project and an Azure AI Search service in it. Choose the lowest-cost tier, and use a free tier if your subscription offers one, since your data set is small. Read the docs on creating an index and adding vectors to it.
 - **Tue:** create an index with a text field, a source field and a vector field. Upload your chunks and their vectors with the Azure AI Search Python SDK.
 - **Wed:** run vector queries from Python and send your 10 test questions through them. Compare the results with your local `retrieve`. Write down every setting you chose, because Terraform will recreate it in Week 7. Delete the search service if it costs money while idle.
@@ -87,9 +87,9 @@ This is the week your existing skills do the heavy lifting. Turn Week 6's manual
 - **Fri:** run `terraform destroy`, then `terraform apply` from nothing, then ask the app a question. Do the teach-back.
 **Links:** [[LINK https://developer.hashicorp.com/terraform/tutorials/azure-get-started/azure-build|Terraform: build infrastructure on Azure]], [[LINK https://learn.microsoft.com/azure/container-apps/manage-secrets|Container Apps: manage secrets]].
 **Done when:** one `terraform apply` builds everything, the app answers a question, `terraform destroy` removes it all, and no secret value appears in your Terraform files or in git history.
-**Break: Dec 21 to Jan 2.** No studying. Make sure everything is destroyed so nothing bills while you are away.
+**Before any break** (the original schedule pauses Dec 21 to Jan 2; set yours under Schedule): no studying, and make sure everything is destroyed so nothing bills while you are away.
 ## Week 8 (Jan 4 to 8): GitHub Actions deployment, Gate 3
-After the break, spend Monday rebuilding the environment from your own notes. Then make every push test and deploy the app automatically, with no stored passwords.
+After a break, spend the first day rebuilding the environment from your own notes. Then make every push test and deploy the app automatically, with no stored passwords.
 - **Mon:** recreate the whole environment with `terraform apply` and confirm the app answers a question. This is also your warm-up after the break.
 - **Tue:** create a workflow that runs `pytest` and your evaluation on every pull request. Fail the check if the tests fail.
 - **Wed:** set up passwordless sign-in from GitHub to Azure using OpenID Connect: create a federated credential on a Microsoft Entra application or a user-assigned managed identity, give it only the role it needs, and store only its IDs as GitHub secrets.

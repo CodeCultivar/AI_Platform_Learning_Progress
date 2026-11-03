@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil, mergeStates, sameState, resetState, emptyState } from './lib.js'
+import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil, mergeStates, sameState, resetState, emptyState, buildSchedule, normalizeSchedule, DEFAULT_SCHEDULE, hoursPerWeek, fmtRange } from './lib.js'
 import { syncOnce } from './sync.js'
 import { SOURCES } from './data/sources.js'
 import plan from './data/plan.json'
@@ -12,13 +12,65 @@ describe('parseInline', () => {
   })
 })
 
-describe('currentWeek', () => {
-  it('maps dates to weeks', () => {
-    expect(currentWeek(new Date('2026-11-03T12:00:00Z'))).toBe(1)
-    expect(currentWeek(new Date('2026-11-12T12:00:00Z'))).toBe(2)
-    expect(currentWeek(new Date('2026-12-25T12:00:00Z'))).toBe(8) // holiday break -> next week
-    expect(currentWeek(new Date('2026-10-01T12:00:00Z'))).toBe(1)
-    expect(currentWeek(new Date('2027-06-01T12:00:00Z'))).toBe(12)
+describe('schedule', () => {
+  const starts = (s) => s.weeks.map((w) => w.start)
+  it('default settings reproduce the original calendar', () => {
+    const s = buildSchedule(undefined)
+    expect(starts(s)).toEqual(['2026-11-03', '2026-11-09', '2026-11-16', '2026-11-23', '2026-11-30', '2026-12-07', '2026-12-14', '2027-01-04', '2027-01-11', '2027-01-18', '2027-01-25', '2027-02-01'])
+    expect(s.end).toBe('2027-02-07')
+    expect(s.hours).toBe(5)
+  })
+  it('moving the start date moves everything', () => {
+    const s = buildSchedule({ start: '2026-11-09', weeksPer: 1, breaks: [] })
+    expect(starts(s)[0]).toBe('2026-11-09'); expect(starts(s)[11]).toBe('2027-01-25'); expect(s.end).toBe('2027-01-31')
+  })
+  it('a slower pace stretches the plan', () => {
+    const s = buildSchedule({ start: '2026-11-02', weeksPer: 2, breaks: [] })
+    expect(starts(s).slice(0, 3)).toEqual(['2026-11-02', '2026-11-16', '2026-11-30'])
+    expect(s.hours).toBe(2.5)
+  })
+  it('a faster pace uses half-week windows without drifting', () => {
+    const s = buildSchedule({ start: '2026-11-02', weeksPer: 0.5, breaks: [] })
+    expect(s.weeks[11].end > s.weeks[10].end).toBe(true)
+    expect(s.weeks.every((w) => w.end >= w.start)).toBe(true)
+    expect(s.hours).toBe(10)
+  })
+  it('a break pushes later weeks and never starts a week on a break or weekend', () => {
+    const s = buildSchedule({ start: '2026-11-02', weeksPer: 1, breaks: [{ start: '2026-11-10', end: '2026-11-23' }] })
+    expect(s.weeks[1].start).toBe('2026-11-09') // week 2 begins before the break and runs through it
+    expect(s.weeks[1].breakDays).toBeGreaterThan(0)
+    s.weeks.forEach((w) => { expect(w.start >= '2026-11-10' && w.start <= '2026-11-23').toBe(false) })
+    expect(s.weeks[2].start > '2026-11-23').toBe(true)
+  })
+  it('bad settings fall back safely', () => {
+    expect(normalizeSchedule(null)).toEqual(DEFAULT_SCHEDULE)
+    const n = normalizeSchedule({ start: 'nope', weeksPer: 7, breaks: [{ start: '2026-02-30', end: '2026-03-01' }, { start: '2026-12-05', end: '2026-12-01' }] })
+    expect(n).toEqual({ start: DEFAULT_SCHEDULE.start, weeksPer: 1, breaks: [] })
+  })
+  it('currentWeek follows the schedule', () => {
+    const s = buildSchedule(undefined)
+    expect(currentWeek(s, new Date(2026, 10, 3, 12))).toBe(1)
+    expect(currentWeek(s, new Date(2026, 10, 12, 12))).toBe(2)
+    expect(currentWeek(s, new Date(2026, 11, 25, 12))).toBe(8) // during the break -> next week
+    expect(currentWeek(s, new Date(2026, 9, 1, 12))).toBe(1)
+    expect(currentWeek(s, new Date(2027, 5, 1, 12))).toBe(12)
+  })
+  it('helpers', () => { expect(hoursPerWeek(2)).toBe(2.5); expect(fmtRange('2026-11-03', '2026-11-08')).toBe('Nov 3 – Nov 8') })
+})
+
+describe('schedule settings sync', () => {
+  const cfg1 = { start: '2026-11-10', weeksPer: 1, breaks: [] }
+  it('newest schedule edit wins and reset keeps it', () => {
+    const a = { ...emptyState(), settings: { schedule: cfg1 }, ts: { 's:schedule': 5 } }
+    const b = { ...emptyState(), settings: { schedule: { ...cfg1, weeksPer: 2 } }, ts: { 's:schedule': 9 } }
+    expect(mergeStates(a, b).settings.schedule.weeksPer).toBe(2)
+    expect(resetState(a, 100).settings.schedule).toEqual(cfg1)
+    expect(resetState(a, 100).ts['s:schedule']).toBe(5)
+  })
+  it('clearing the schedule (back to default) propagates', () => {
+    const a = { ...emptyState(), settings: { schedule: cfg1 }, ts: { 's:schedule': 5 } }
+    const cleared = { ...emptyState(), ts: { 's:schedule': 9 } }
+    expect(mergeStates(a, cleared).settings.schedule).toBeUndefined()
   })
 })
 

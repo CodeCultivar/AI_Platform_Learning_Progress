@@ -1,40 +1,44 @@
 import { useState } from 'react'
 import plan from '../data/plan.json'
 import { Inline, Blocks, Ring, Bar, Check } from './Inline.jsx'
-import { weekTaskIds, kickoffIds, pct, taskIds, daysUntil, currentWeek } from '../lib.js'
+import { weekTaskIds, kickoffIds, pct, taskIds, daysUntil, currentWeek, fmtRange, fmtDay, fmtShort } from '../lib.js'
+import { useSched } from '../schedule-context.js'
 
-const fmt = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+const rangeOf = (sched, n) => { const w = sched.weeks[n - 1]; return fmtRange(w.start, w.end) }
+const breakNote = (sched, n) => { const b = sched.weeks[n - 1].breakDays; return b ? `Includes ${b} break day${b === 1 ? '' : 's'}, so this week runs longer.` : '' }
 
-export function Dashboard({ st, toggle }) {
+export function Dashboard({ st, toggle, onSchedule }) {
+  const sched = useSched()
   const all = taskIds()
   const total = pct(all, st.checked)
   const doneCount = all.filter((id) => st.checked[id]).length
-  const cw = currentWeek()
+  const cw = currentWeek(sched)
   const week = plan.weeks.find((w) => w.n === cw)
   const next = [...week.steps.map((s, i) => ({ id: `w${week.n}-s${i}`, s })), { id: `w${week.n}-done`, s: { label: 'Done when', text: week.done } }].filter((t) => !st.checked[t.id])
   const kPct = pct(kickoffIds(), st.checked)
   const gates = plan.weeks.filter((w) => w.gate)
-  const start = daysUntil(plan.weeks[0].start)
-  const end = daysUntil(plan.weeks[11].end)
+  const start = daysUntil(sched.start)
+  const end = daysUntil(sched.end)
 
   return (
     <>
       <header className="hero">
-        <p className="eyebrow">Tue Nov 3, 2026 → Fri Feb 5, 2027</p>
+        <p className="eyebrow">{fmtDay(sched.start)} → {fmtDay(sched.end)}</p>
         <h1>{plan.title}</h1>
         <p className="lede">{plan.intro}</p>
         <div className="stats">
           <div><b>{total}%</b><span>{doneCount} of {all.length} tasks</span></div>
           <div><b>{cw}</b><span>current week of 12</span></div>
           <div><b>{Object.keys(st.checked).filter((k) => /^w\d+-done$/.test(k) && st.checked[k]).length}</b><span>weeks finished</span></div>
-          <div><b>{end > 0 ? end : 0}</b><span>days until Feb 5{start > 0 ? ` (starts in ${start}d)` : ''}</span></div>
+          <div><b>{end > 0 ? end : 0}</b><span>days until {fmtShort(sched.end)}{start > 0 ? ` (starts in ${start}d)` : ''}</span></div>
         </div>
         <Bar value={total} />
+        <button className="linklike" onClick={onSchedule}>Adjust schedule ({sched.hours} h/week)</button>
       </header>
 
       {kPct < 100 && (
         <section className="callout">
-          <h2>Start here: tonight's kickoff</h2>
+          <h2>Start here: the 90-minute kickoff</h2>
           <p>90 minutes. A Python project on GitHub, a running FastAPI app, one passing test. <b>{kPct}%</b> done.</p>
           <a className="btn" href="#/kickoff">Open the kickoff checklist</a>
         </section>
@@ -45,7 +49,7 @@ export function Dashboard({ st, toggle }) {
           <h2>This week: Week {week.n}, {week.topic}</h2>
           <a href={`#/week/${week.n}`}>Open week →</a>
         </div>
-        <p className="muted">{week.dates}</p>
+        <p className="muted">{rangeOf(sched, week.n)} {breakNote(sched, week.n)}</p>
         {next.length === 0 ? <p className="ok">Everything in this week is checked off. Nice.</p> : (
           <div className="card tasks">
             {next.slice(0, 4).map((t) => (
@@ -67,7 +71,7 @@ export function Dashboard({ st, toggle }) {
               <a key={w.n} className={`card week-card ${w.n === cw ? 'now' : ''}`} href={`#/week/${w.n}`}>
                 <Ring value={v} />
                 <div>
-                  <small>Week {w.n} · {w.dates}{w.gate ? ` · Gate ${w.gate}` : ''}</small>
+                  <small>Week {w.n} · {rangeOf(sched, w.n)}{w.gate ? ` · Gate ${w.gate}` : ''}</small>
                   <strong>{w.topic}</strong>
                 </div>
               </a>
@@ -133,10 +137,11 @@ function LinkList({ links, text }) {
 }
 
 export function Kickoff({ st, toggle, setNote }) {
+  const sched = useSched()
   const k = plan.kickoff
   return (
     <>
-      <p className="eyebrow">Tue Nov 3 · 90 minutes</p>
+      <p className="eyebrow">Day 1 ({fmtDay(sched.start)}) · 90 minutes</p>
       <h1>{k.title}</h1>
       <p className="lede">{k.summary}</p>
       <Bar value={pct(kickoffIds(), st.checked)} />
@@ -148,14 +153,16 @@ export function Kickoff({ st, toggle, setNote }) {
 }
 
 export function Week({ n, st, toggle, setNote }) {
+  const sched = useSched()
   const w = plan.weeks.find((x) => x.n === n)
   if (!w) return <p>No such week. <a href="#/">Back to dashboard</a></p>
   const v = pct(weekTaskIds(w), st.checked)
   return (
     <>
-      <p className="eyebrow">Week {w.n} of 12 · {w.dates}{w.gate ? ` · Gate ${w.gate}` : ''}</p>
+      <p className="eyebrow">Week {w.n} of 12 · {rangeOf(sched, w.n)}{w.light ? ' · light week' : ''}{w.gate ? ` · Gate ${w.gate}` : ''}</p>
       <h1>{w.topic[0].toUpperCase() + w.topic.slice(1)}</h1>
       <p className="lede"><Inline text={w.summary} /></p>
+      {breakNote(sched, w.n) && <p className="note">{breakNote(sched, w.n)}</p>}
       <Bar value={v} />
       <Checklist plan={w} prefix={`w${w.n}-s`} doneId={`w${w.n}-done`} st={st} toggle={toggle} />
       {w.notes.map((t, i) => <p key={i} className="note"><Inline text={t} /></p>)}
@@ -170,6 +177,7 @@ export function Week({ n, st, toggle, setNote }) {
 }
 
 export function Gates({ st, toggle }) {
+  const sched = useSched()
   const gates = plan.weeks.filter((w) => w.gate)
   return (
     <>
@@ -181,7 +189,7 @@ export function Gates({ st, toggle }) {
         const s = w.steps[idx]
         return (
           <div key={w.gate} className={`card gate-card ${st.checked[id] ? 'pass' : ''}`}>
-            <small>Gate {w.gate} · Week {w.n} · {w.dates}</small>
+            <small>Gate {w.gate} · Week {w.n} · {rangeOf(sched, w.n)}</small>
             <h3>{w.topic}</h3>
             <Check id={id} checked={st.checked[id]} onToggle={toggle} gate>
               <b className="lab">{s.label}</b> <Inline text={s.text} />

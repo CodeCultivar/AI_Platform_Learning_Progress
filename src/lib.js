@@ -31,14 +31,14 @@ export function loadState() {
   } catch { /* storage unavailable or corrupt: start fresh */ }
   return emptyState()
 }
-export const emptyState = () => ({ checked: {}, notes: {}, dates: {}, ts: {} })
-export const normalizeState = (s) => ({ checked: s?.checked || {}, notes: s?.notes || {}, dates: s?.dates || {}, ts: s?.ts || {} })
+export const emptyState = () => ({ checked: {}, notes: {}, dates: {}, settings: {}, ts: {} })
+export const normalizeState = (s) => ({ checked: s?.checked || {}, notes: s?.notes || {}, dates: s?.dates || {}, settings: s?.settings || {}, ts: s?.ts || {} })
 
 // ---- sync support -------------------------------------------------------
 // Every edit is stamped: ts["c:<taskId>"] / ts["n:<noteKey>"] = epoch ms. Merging keeps the newer
 // edit per item, so two devices that edit different things never overwrite each other, and an
 // un-check is remembered (a timestamp with no value) instead of being resurrected by the other side.
-const hasValue = (st, k) => (k[0] === 'c' ? !!st.checked[k.slice(2)] : !!st.notes[k.slice(2)])
+const hasValue = (st, k) => (k[0] === 'c' ? !!st.checked[k.slice(2)] : k[0] === 'n' ? !!st.notes[k.slice(2)] : !!st.settings[k.slice(2)])
 const stamp = (st, k) => st.ts[k] ?? (hasValue(st, k) ? 1 : 0) // legacy data without stamps counts as old
 
 export function mergeStates(a, b) {
@@ -48,6 +48,7 @@ export function mergeStates(a, b) {
     ...Object.keys(a.ts), ...Object.keys(b.ts),
     ...Object.keys(a.checked).map((i) => 'c:' + i), ...Object.keys(b.checked).map((i) => 'c:' + i),
     ...Object.keys(a.notes).map((i) => 'n:' + i), ...Object.keys(b.notes).map((i) => 'n:' + i),
+    ...Object.keys(a.settings).map((i) => 's:' + i), ...Object.keys(b.settings).map((i) => 's:' + i),
   ])
   for (const k of keys) {
     const ta = stamp(a, k), tb = stamp(b, k)
@@ -57,7 +58,8 @@ export function mergeStates(a, b) {
     out.ts[k] = Math.max(ta, tb)
     if (k[0] === 'c') {
       if (src.checked[id]) { out.checked[id] = true; if (src.dates[id]) out.dates[id] = src.dates[id] }
-    } else if (src.notes[id]) out.notes[id] = src.notes[id]
+    } else if (k[0] === 'n') { if (src.notes[id]) out.notes[id] = src.notes[id] }
+    else if (src.settings[id]) out.settings[id] = src.settings[id]
   }
   return out
 }
@@ -68,25 +70,87 @@ export const sameState = (a, b) => stable(normalizeState(a)) === stable(normaliz
 // Clearing everything must also sync, so reset stamps each item as "emptied now".
 export function resetState(st, now = Date.now()) {
   const out = emptyState()
+  out.settings = { ...st.settings } // Reset clears progress and notes, not your schedule
   const keys = new Set([...Object.keys(st.ts), ...Object.keys(st.checked).map((i) => 'c:' + i), ...Object.keys(st.notes).map((i) => 'n:' + i)])
-  keys.forEach((k) => { out.ts[k] = now })
+  keys.forEach((k) => { out.ts[k] = k[0] === 's' ? st.ts[k] : now })
   return out
 }
 export function saveState(s) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(s)) } catch { /* ignore */ }
 }
 
-// Which week is "now"? Before the start -> week 1; break/after -> next week or last.
-export function currentWeek(today = new Date()) {
-  const t = today.toISOString().slice(0, 10)
-  const weeks = plan.weeks
-  if (t < weeks[0].start) return weeks[0].n
-  for (const w of weeks) {
-    if (t <= w.end) return w.n
+// ---- schedule -----------------------------------------------------------
+// Dates are never stored in the plan. They are computed from the user's settings:
+// a start date, how many calendar weeks each plan week gets, and any break periods.
+export const DEFAULT_SCHEDULE = { start: '2026-11-03', weeksPer: 1, breaks: [{ start: '2026-12-21', end: '2027-01-02' }] }
+export const PACE_OPTIONS = [0.5, 1, 1.5, 2, 3, 4]
+
+const DAY = 86400000
+const toMs = (iso) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10))
+const toIso = (ms) => new Date(ms).toISOString().slice(0, 10)
+export const addDays = (iso, n) => toIso(toMs(iso) + n * DAY)
+const dow = (iso) => new Date(toMs(iso)).getUTCDay() // 0 = Sunday
+export const isIso = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x) && toIso(toMs(x)) === x
+export const localIso = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+export function normalizeSchedule(c) {
+  if (!c) return DEFAULT_SCHEDULE
+  const wp = Number(c.weeksPer)
+  return {
+    start: isIso(c.start) ? c.start : DEFAULT_SCHEDULE.start,
+    weeksPer: PACE_OPTIONS.includes(wp) ? wp : 1,
+    breaks: (Array.isArray(c.breaks) ? c.breaks : []).filter((b) => isIso(b?.start) && isIso(b?.end) && b.start <= b.end).slice(0, 12).map((b) => ({ start: b.start, end: b.end })),
   }
-  // between weeks (weekends, holiday break): the next upcoming week
-  const next = weeks.find((w) => w.start > t)
-  return next ? next.n : weeks[weeks.length - 1].n
+}
+export const hoursPerWeek = (weeksPer) => Math.round(50 / weeksPer) / 10 // the plan is designed for 5 hours a week
+
+export function buildSchedule(cfg, n = plan.weeks.length) {
+  const c = normalizeSchedule(cfg)
+  const whole = Number.isInteger(c.weeksPer)
+  const inBreak = (iso) => c.breaks.find((b) => iso >= b.start && iso <= b.end)
+  const breakDaysIn = (a, b) => { let k = 0; for (let d = a; d <= b; d = addDays(d, 1)) if (inBreak(d)) k++; return k }
+  const sundayOnOrAfter = (iso) => addDays(iso, (7 - dow(iso)) % 7)
+  const weeks = []
+  let cursor = c.start
+  for (let i = 1; i <= n; i++) {
+    // jump past breaks and weekends so a week never starts on a break day or a weekend (except day 1)
+    for (let g = 0; g < 60; g++) {
+      const b = inBreak(cursor)
+      if (b) { cursor = addDays(b.end, 1); continue }
+      if (i > 1 && (dow(cursor) === 0 || dow(cursor) === 6)) { cursor = addDays(cursor, dow(cursor) === 6 ? 2 : 1); continue }
+      break
+    }
+    const nominal = whole ? addDays(sundayOnOrAfter(cursor), 7 * (c.weeksPer - 1)) : addDays(cursor, Math.round(c.weeksPer * 7) - 1)
+    let extra = 0, end = nominal
+    for (let g = 0; g < 20; g++) {
+      end = addDays(nominal, extra)
+      if (whole) end = sundayOnOrAfter(end)
+      const bd = breakDaysIn(cursor, end)
+      if (bd <= extra) break
+      extra = bd
+    }
+    weeks.push({ n: i, start: cursor, end, breakDays: breakDaysIn(cursor, end) })
+    cursor = addDays(end, 1)
+  }
+  return { weeks, start: weeks[0].start, end: weeks[weeks.length - 1].end, config: c, hours: hoursPerWeek(c.weeksPer) }
+}
+
+// Which plan week is "now"? Before the start -> 1; after the end -> last; in a gap/break -> the next week.
+export function currentWeek(sched, today = new Date()) {
+  const t = localIso(today)
+  const w = sched.weeks
+  if (t < w[0].start) return 1
+  const hit = w.find((x) => t >= x.start && t <= x.end)
+  if (hit) return hit.n
+  const next = w.find((x) => x.start > t)
+  return next ? next.n : w[w.length - 1].n
+}
+
+const fmt = (iso, o) => new Date(toMs(iso)).toLocaleDateString('en-US', { timeZone: 'UTC', ...o })
+export const fmtDay = (iso) => fmt(iso, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+export const fmtShort = (iso) => fmt(iso, { month: 'short', day: 'numeric' })
+export function fmtRange(a, b) {
+  return a.slice(0, 4) === b.slice(0, 4) ? `${fmtShort(a)} – ${fmtShort(b)}` : `${fmtShort(a)}, ${a.slice(0, 4)} – ${fmtShort(b)}, ${b.slice(0, 4)}`
 }
 
 export function daysUntil(iso, today = new Date()) {
