@@ -12,26 +12,26 @@ By the end of the kickoff you have a Python project on GitHub with a running Fas
 - **10 min, log:** create `PROGRESS.md` and write the date, what worked and what blocked you.
 **Links for the kickoff:** [[LINK https://realpython.com/python-virtual-environments-a-complete-guide/|Python virtual environments guide]], [[LINK https://fastapi.tiangolo.com/tutorial/first-steps/|FastAPI first steps]], [[LINK https://fastapi.tiangolo.com/tutorial/testing/|FastAPI testing]], [[LINK https://docs.pytest.org/en/9.0.x/getting-started.html|pytest getting started]].
 **Done when:** `pytest` passes on your machine and the code is visible on GitHub.
-## What changed from the first plan
-You still have 5 hours a week, so the speedup comes from sequencing, not extra hours. The project now finishes in Week 11 instead of Week 12, which leaves a full week to apply.
-- **Gate 1 moves up to the end of Week 2.** Your quiz score (11 of 12) and your Terraform experience say concepts are not your problem, so the first gate tests the real gap: writing Python from a blank folder.
+## How the plan is structured
+The plan assumes about 5 hours a week, so the speed comes from sequencing, not extra hours. The project finishes in Week 11, which leaves a full week to apply.
+- **Gate 1 comes early, at the end of Week 2.** Concepts are easy to read about, so the first gate tests the real gap for most people moving into this field: writing Python from a blank folder.
 - **Deploy by hand, then automate.** In Week 6 you deploy manually to see every step, and in Week 7 you turn those steps into Terraform. This is faster than learning both at once.
-- **Terraform gets one week, not two.** You already own Terraform, so the saved time goes to Python and the LLM work.
+- **Terraform gets one week.** The plan assumes you know the basics, so the time goes to Python and the LLM work. If Terraform is new to you, give it a second week.
 - **Evaluation, cost and monitoring are built in.** Hiring teams for AI platform roles ask how you know the app works and what it costs. You will have numbers for both.
 - **Agent and MCP come last.** They sit on top of a working, deployed base, so they take days, not weeks.
-- **Friday teach-back.** Each Friday, explain what you built that week in 3 minutes out loud, then answer 5 questions from me. If you can't explain it, you haven't learned it yet.
+- **Friday teach-back.** Each Friday, explain what you built that week in 3 minutes out loud, then answer 5 questions from a friend, a mentor or an AI tutor. If you can't explain it, you haven't learned it yet.
 ## Ground rules
 Three rules keep this safe, cheap and honest.
-- **Personal accounts only.** Use your personal GitHub account and a personal Azure subscription. Do not use Kroger code, data, credentials or subscriptions, and build the retrieval app on public documents. If you are unsure whether your employer allows outside projects, check the policy before you start.
+- **Personal accounts only.** Use your personal GitHub account and a personal Azure subscription. Do not use your employer's code, data, credentials or subscriptions, and build the retrieval app on public documents. If you are unsure whether your employer allows outside projects, check the policy before you start.
 - **Azure credit timing.** Azure free accounts typically include a $200 credit that lasts 30 days, but confirm the current terms when you sign up. That is why you create the account in Week 3, not on day 1: the credit then covers Weeks 3 to 7, which is when you deploy the most. After it ends, you pay as you go, so create a budget alert the day you sign up and delete the resource group after each deployment session.
 - **AI tools are your tutor, not your typist.** Use Claude or Copilot to explain errors, review your code and quiz you. Do not paste in whole solutions. If AI wrote a piece of code, you must be able to explain every line of it. Gates 1 and 3 are done with no AI code generation, and docs are allowed.
-Pluralsight through Kroger is a good backup when a concept won't click. Use at most one course per week, and only on that week's topic.
+A course platform such as Pluralsight, if you have access through work or school, is a good backup when a concept won't click. Use at most one course per week, and only on that week's topic.
 ## Week 1 (Nov 3 to 6): Python project setup, FastAPI and tests
 Build a small, tested web API that will become your LLM app.
 - **Day 1:** do the kickoff above.
 - **Wed:** add a `POST /ask` endpoint that takes a question and returns a placeholder answer. Define the request and response as Pydantic models so FastAPI validates them.
 - **Thu:** write tests for `/ask`: a valid question returns 200, and an empty question returns 422. Keep every test independent of the others.
-- **Fri:** check-in and teach-back. Then spend 30 minutes reading what an embedding is and why it is stored as a vector. This closes the one quiz question you missed.
+- **Fri:** check-in and teach-back. Then spend 30 minutes reading what an embedding is and why it is stored as a vector.
 **Links:** [[LINK https://fastapi.tiangolo.com/tutorial/first-steps/|FastAPI first steps]], [[LINK https://fastapi.tiangolo.com/tutorial/testing/|FastAPI testing]], [[LINK https://docs.pytest.org/en/9.0.x/getting-started.html|pytest getting started]], [[LINK https://learn.microsoft.com/en-us/azure/search/retrieval-augmented-generation-overview|Azure AI Search RAG overview]] (read the first section only).
 **Done when:** `/health` and `/ask` work, you have at least 4 passing tests, and everything is pushed to GitHub with a README that explains how to run it.
 ## Week 2 (Nov 9 to 13): call an LLM from your API, Gate 1
@@ -42,7 +42,7 @@ Make `/ask` return a real model answer, then prove you can rebuild it without he
 - **Thu:** write tests that replace the model call with a fake, so tests never spend money or depend on the network.
 - **Fri, Gate 1:** in a new blank folder, rebuild the endpoint, a test and the model call in 60 minutes. Official docs are allowed, but no tutorials, no copying from your earlier repo and no AI code generation.
 **Links:** [[LINK https://platform.claude.com/docs/en/get-started|Anthropic API quickstart]], [[LINK https://platform.claude.com/docs/en/api/messages/create|Anthropic Messages API reference]], [[LINK https://fastapi.tiangolo.com/tutorial/testing/|FastAPI testing]].
-**Done when:** `/ask` returns a model answer, your tests run offline, and you pass Gate 1. If you miss it, repeat the blank-folder build the next Monday and tell me where you got stuck.
+**Done when:** `/ask` returns a model answer, your tests run offline, and you pass Gate 1. If you miss it, repeat the blank-folder build the next Monday and write down where you got stuck.
 ## Week 3 (Nov 16 to 20): Azure account, embeddings and retrieval
 Turn documents into searchable vectors and prove retrieval finds the right passage, all on your own machine first.
 - **Mon:** create your personal [[LINK https://azure.microsoft.com/free|Azure free account]] and confirm the current credit terms. Immediately create a monthly budget with email alerts at a low limit you choose.
@@ -79,7 +79,7 @@ Deploy by hand first, so Terraform in Week 7 has nothing mysterious in it.
 **Links:** [[LINK https://docs.docker.com/get-started/part2/|Docker get started]], [[LINK https://learn.microsoft.com/en-us/azure/container-apps/quickstart-code-to-cloud|Container Apps: build and deploy from local source]], [[LINK https://learn.microsoft.com/en-us/azure/container-apps/get-started-existing-container-image|Container Apps: deploy an existing container image]], [[LINK https://learn.microsoft.com/azure/container-apps/manage-secrets|Container Apps: manage secrets]].
 **Done when:** the public URL answered a question, `DEPLOY_NOTES.md` lists every step, and the resource group is deleted.
 ## Week 7 (Dec 14 to 18): Terraform, Key Vault and managed identity
-This is the week your existing skills do the heavy lifting. Turn Week 6's manual steps into Terraform, with no secrets in code.
+If you already know Terraform, this week moves fast. Turn Week 6's manual steps into Terraform, with no secrets in code.
 - **Mon:** skim the Terraform Azure tutorial only for Azure provider setup and authentication, then set up remote state in an Azure Storage account. Look up the current `azurerm` provider version on the Terraform Registry instead of copying the old one in the tutorial.
 - **Tue:** write Terraform for the resource group, a Log Analytics workspace, the Container Apps environment, the container registry and the container app. Use your `DEPLOY_NOTES.md` as the checklist.
 - **Wed:** add a Key Vault and a managed identity for the app, and give that identity the Key Vault Secrets User role. Reference the secret from the container app instead of putting its value in Terraform or in an environment variable.
@@ -121,7 +121,7 @@ Expose your retrieval to other AI tools through MCP, then make the project easy 
 - **Tue:** run your server and test it with an MCP client or the MCP Inspector, and confirm a client can list the tool and call it.
 - **Wed:** connect your own agent, or a desktop AI client you use, to the server and ask a question that makes it call your tool.
 - **Thu:** polish the repository. Write a README with a one-paragraph summary, an architecture diagram, run steps, your evaluation results and your cost per request. Record a short demo, and do a security pass: no secrets, least-privilege roles and a deleted unused resource group.
-- **Fri, Gate 4:** ask a friend, or a fresh machine, to run your project from the README alone. Then do a mock interview with me about your design choices.
+- **Fri, Gate 4:** ask a friend, or a fresh machine, to run your project from the README alone. Then do a mock interview with a friend, a mentor or an AI tutor about your design choices.
 **Links:** [[LINK https://gofastmcp.com/tutorials/create-mcp-server|FastMCP: create an MCP server]], [[LINK https://py.sdk.modelcontextprotocol.io/|MCP Python SDK documentation]].
 **Done when:** a client calls your MCP tool successfully, your README works for someone else, and you can explain every design choice in the mock interview.
 ## Week 12 (Feb 1 to 5): resume, mock interviews and applications
@@ -129,7 +129,7 @@ Turn the project into interviews. If any gate slipped earlier, use Monday and Tu
 - **Mon:** update your resume and LinkedIn. Add the project with measurable results: evaluation pass rate, cost per request, deployment time and the tools used. Keep your real job title and describe your scope in the summary. Pin the repository on GitHub.
 - **Tue:** shortlist 20 roles in three groups: AI platform engineer, cloud platform engineer with AI workloads, and AI automation or integration engineer. Note the requirements that appear most often and compare them with your skills.
 - **Wed:** tailor your resume to your best 5 roles and apply.
-- **Thu:** do two mock interviews with me. The first is a walkthrough of your project's design and trade-offs. The second is a Terraform, Azure and security troubleshooting round.
+- **Thu:** do two mock interviews with a friend, a mentor or an AI tutor. The first is a walkthrough of your project's design and trade-offs. The second is a Terraform, Azure and security troubleshooting round.
 - **Fri:** apply to 5 more roles, write down any gaps you heard in the mocks and postings, and decide what the next 90 days should cover.
 **Done when:** 10 applications are submitted, 2 mock interviews are done, and your resume and LinkedIn show the project.
 ## All links in one place
@@ -213,9 +213,9 @@ Certification details and price
 After
 Skills measured
 ## After the 90 days
-The exam in the first version of this plan, AI-102 (Azure AI Engineer Associate), is no longer available: it retired on June 30, 2026. Its replacement is AI-103, Developing AI Apps and Agents on Azure, which leads to the Azure AI Apps and Agents Developer Associate credential.
-- **AI-103 fits this plan.** It is built around Microsoft Foundry and expects Python and Azure experience, which is exactly what your project builds. Check the [[LINK https://learn.microsoft.com/credentials/certifications/exams/ai-103/|exam page]] for its current status (it was listed as beta when I searched), the price and the languages offered before you book, and use the [[LINK https://learn.microsoft.com/credentials/certifications/resources/study-guides/ai-103|study guide]] as a checklist.
-- **Timing:** keep your original target of spring 2027 for the exam, and use 6 to 8 weeks after Week 12 to prepare. Apply for jobs during those weeks, since the project matters more to employers than the certificate.
+The older Microsoft exam AI-102 (Azure AI Engineer Associate) is no longer available: it retired on June 30, 2026. Its replacement is AI-103, Developing AI Apps and Agents on Azure, which leads to the Azure AI Apps and Agents Developer Associate credential.
+- **AI-103 fits this plan.** It is built around Microsoft Foundry and expects Python and Azure experience, which is exactly what your project builds. Check the [[LINK https://learn.microsoft.com/credentials/certifications/exams/ai-103/|exam page]] for its current status (it was listed as beta when this was written), the price and the languages offered before you book, and use the [[LINK https://learn.microsoft.com/credentials/certifications/resources/study-guides/ai-103|study guide]] as a checklist.
+- **Timing:** plan the exam for the months after Week 12, and use 6 to 8 weeks after Week 12 to prepare. Apply for jobs during those weeks, since the project matters more to employers than the certificate.
 - **Also check:** one non-Microsoft source lists a newer MLOps-focused Microsoft exam (AI-300). Confirm it on Microsoft Learn before you plan around it.
-- **Data engineering:** revisit it after you land an AI platform role, or if the platform path stalls. Your Databricks and pipeline skills would then build on a working cloud base.
+- **Data engineering:** revisit it after you land an AI platform role, or if the platform path stalls. Databricks and pipeline skills build well on a working cloud base.
 - **Keep the project alive.** Keep the repository tidy, delete idle cloud resources, and add one improvement a month. That gives you something new to talk about in interviews.

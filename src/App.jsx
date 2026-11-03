@@ -143,7 +143,7 @@ export default function App() {
           <p className="nav-h">Reference</p>
           <a className={active('gates')} href="#/gates" onClick={() => setQ('')}>Gates</a>
           <a className={active('links')} href="#/links" onClick={() => setQ('')}>All links</a>
-          <a className={active('guide')} href="#/guide" onClick={() => setQ('')}>Rules & changes</a>
+          <a className={active('guide')} href="#/guide" onClick={() => setQ('')}>Rules & structure</a>
           <a className={active('after')} href="#/after" onClick={() => setQ('')}>After the 90 days</a>
         </nav>
         <div className="tools">

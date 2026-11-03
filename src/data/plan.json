@@ -53,21 +53,21 @@
   "title": "Day 1 kickoff: your first 90 minutes"
  },
  "changed": {
-  "title": "What changed from the first plan",
+  "title": "How the plan is structured",
   "blocks": [
    {
     "t": "p",
-    "text": "You still have 5 hours a week, so the speedup comes from sequencing, not extra hours. The project now finishes in Week 11 instead of Week 12, which leaves a full week to apply."
+    "text": "The plan assumes about 5 hours a week, so the speed comes from sequencing, not extra hours. The project finishes in Week 11, which leaves a full week to apply."
    },
    {
     "t": "ul",
     "items": [
-     "**Gate 1 moves up to the end of Week 2.** Your quiz score (11 of 12) and your Terraform experience say concepts are not your problem, so the first gate tests the real gap: writing Python from a blank folder.",
+     "**Gate 1 comes early, at the end of Week 2.** Concepts are easy to read about, so the first gate tests the real gap for most people moving into this field: writing Python from a blank folder.",
      "**Deploy by hand, then automate.** In Week 6 you deploy manually to see every step, and in Week 7 you turn those steps into Terraform. This is faster than learning both at once.",
-     "**Terraform gets one week, not two.** You already own Terraform, so the saved time goes to Python and the LLM work.",
+     "**Terraform gets one week.** The plan assumes you know the basics, so the time goes to Python and the LLM work. If Terraform is new to you, give it a second week.",
      "**Evaluation, cost and monitoring are built in.** Hiring teams for AI platform roles ask how you know the app works and what it costs. You will have numbers for both.",
      "**Agent and MCP come last.** They sit on top of a working, deployed base, so they take days, not weeks.",
-     "**Friday teach-back.** Each Friday, explain what you built that week in 3 minutes out loud, then answer 5 questions from me. If you can't explain it, you haven't learned it yet."
+     "**Friday teach-back.** Each Friday, explain what you built that week in 3 minutes out loud, then answer 5 questions from a friend, a mentor or an AI tutor. If you can't explain it, you haven't learned it yet."
     ]
    }
   ]
@@ -82,14 +82,14 @@
    {
     "t": "ul",
     "items": [
-     "**Personal accounts only.** Use your personal GitHub account and a personal Azure subscription. Do not use Kroger code, data, credentials or subscriptions, and build the retrieval app on public documents. If you are unsure whether your employer allows outside projects, check the policy before you start.",
+     "**Personal accounts only.** Use your personal GitHub account and a personal Azure subscription. Do not use your employer's code, data, credentials or subscriptions, and build the retrieval app on public documents. If you are unsure whether your employer allows outside projects, check the policy before you start.",
      "**Azure credit timing.** Azure free accounts typically include a $200 credit that lasts 30 days, but confirm the current terms when you sign up. That is why you create the account in Week 3, not on day 1: the credit then covers Weeks 3 to 7, which is when you deploy the most. After it ends, you pay as you go, so create a budget alert the day you sign up and delete the resource group after each deployment session.",
      "**AI tools are your tutor, not your typist.** Use Claude or Copilot to explain errors, review your code and quiz you. Do not paste in whole solutions. If AI wrote a piece of code, you must be able to explain every line of it. Gates 1 and 3 are done with no AI code generation, and docs are allowed."
     ]
    },
    {
     "t": "p",
-    "text": "Pluralsight through Kroger is a good backup when a concept won't click. Use at most one course per week, and only on that week's topic."
+    "text": "A course platform such as Pluralsight, if you have access through work or school, is a good backup when a concept won't click. Use at most one course per week, and only on that week's topic."
    }
   ]
  },
@@ -111,7 +111,7 @@
     },
     {
      "label": "Fri",
-     "text": "check-in and teach-back. Then spend 30 minutes reading what an embedding is and why it is stored as a vector. This closes the one quiz question you missed."
+     "text": "check-in and teach-back. Then spend 30 minutes reading what an embedding is and why it is stored as a vector."
     }
    ],
    "linksText": "[[LINK https://fastapi.tiangolo.com/tutorial/first-steps/|FastAPI first steps]], [[LINK https://fastapi.tiangolo.com/tutorial/testing/|FastAPI testing]], [[LINK https://docs.pytest.org/en/9.0.x/getting-started.html|pytest getting started]], [[LINK https://learn.microsoft.com/en-us/azure/search/retrieval-augmented-generation-overview|Azure AI Search RAG overview]] (read the first section only).",
@@ -180,7 +180,7 @@
      "label": "FastAPI testing"
     }
    ],
-   "done": "`/ask` returns a model answer, your tests run offline, and you pass Gate 1. If you miss it, repeat the blank-folder build the next Monday and tell me where you got stuck.",
+   "done": "`/ask` returns a model answer, your tests run offline, and you pass Gate 1. If you miss it, repeat the blank-folder build the next Monday and write down where you got stuck.",
    "notes": [],
    "n": 2,
    "topic": "call an LLM from your API, Gate 1",
@@ -375,7 +375,7 @@
    "light": false
   },
   {
-   "summary": "This is the week your existing skills do the heavy lifting. Turn Week 6's manual steps into Terraform, with no secrets in code.",
+   "summary": "If you already know Terraform, this week moves fast. Turn Week 6's manual steps into Terraform, with no secrets in code.",
    "steps": [
     {
      "label": "Mon",
@@ -571,7 +571,7 @@
     },
     {
      "label": "Fri, Gate 4",
-     "text": "ask a friend, or a fresh machine, to run your project from the README alone. Then do a mock interview with me about your design choices.",
+     "text": "ask a friend, or a fresh machine, to run your project from the README alone. Then do a mock interview with a friend, a mentor or an AI tutor about your design choices.",
      "gate": 4
     }
    ],
@@ -611,7 +611,7 @@
     },
     {
      "label": "Thu",
-     "text": "do two mock interviews with me. The first is a walkthrough of your project's design and trade-offs. The second is a Terraform, Azure and security troubleshooting round."
+     "text": "do two mock interviews with a friend, a mentor or an AI tutor. The first is a walkthrough of your project's design and trade-offs. The second is a Terraform, Azure and security troubleshooting round."
     },
     {
      "label": "Fri",
@@ -785,15 +785,15 @@
   "blocks": [
    {
     "t": "p",
-    "text": "The exam in the first version of this plan, AI-102 (Azure AI Engineer Associate), is no longer available: it retired on June 30, 2026. Its replacement is AI-103, Developing AI Apps and Agents on Azure, which leads to the Azure AI Apps and Agents Developer Associate credential."
+    "text": "The older Microsoft exam AI-102 (Azure AI Engineer Associate) is no longer available: it retired on June 30, 2026. Its replacement is AI-103, Developing AI Apps and Agents on Azure, which leads to the Azure AI Apps and Agents Developer Associate credential."
    },
    {
     "t": "ul",
     "items": [
-     "**AI-103 fits this plan.** It is built around Microsoft Foundry and expects Python and Azure experience, which is exactly what your project builds. Check the [[LINK https://learn.microsoft.com/credentials/certifications/exams/ai-103/|exam page]] for its current status (it was listed as beta when I searched), the price and the languages offered before you book, and use the [[LINK https://learn.microsoft.com/credentials/certifications/resources/study-guides/ai-103|study guide]] as a checklist.",
-     "**Timing:** keep your original target of spring 2027 for the exam, and use 6 to 8 weeks after Week 12 to prepare. Apply for jobs during those weeks, since the project matters more to employers than the certificate.",
+     "**AI-103 fits this plan.** It is built around Microsoft Foundry and expects Python and Azure experience, which is exactly what your project builds. Check the [[LINK https://learn.microsoft.com/credentials/certifications/exams/ai-103/|exam page]] for its current status (it was listed as beta when this was written), the price and the languages offered before you book, and use the [[LINK https://learn.microsoft.com/credentials/certifications/resources/study-guides/ai-103|study guide]] as a checklist.",
+     "**Timing:** plan the exam for the months after Week 12, and use 6 to 8 weeks after Week 12 to prepare. Apply for jobs during those weeks, since the project matters more to employers than the certificate.",
      "**Also check:** one non-Microsoft source lists a newer MLOps-focused Microsoft exam (AI-300). Confirm it on Microsoft Learn before you plan around it.",
-     "**Data engineering:** revisit it after you land an AI platform role, or if the platform path stalls. Your Databricks and pipeline skills would then build on a working cloud base.",
+     "**Data engineering:** revisit it after you land an AI platform role, or if the platform path stalls. Databricks and pipeline skills build well on a working cloud base.",
      "**Keep the project alive.** Keep the repository tidy, delete idle cloud resources, and add one improvement a month. That gives you something new to talk about in interviews."
     ]
    }

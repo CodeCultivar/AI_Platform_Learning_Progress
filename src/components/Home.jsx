@@ -33,7 +33,6 @@ export default function Home({ onSchedule }) {
         <p className="lede">This site holds the whole plan and tracks your progress through it. This page explains what the plan is built on, how your progress syncs across devices, and where every number came from.</p>
         <div className="gate-row">
           <a className="btn" href="#/dashboard">Open the dashboard</a>
-          <a className="pill" href="#/kickoff">Start the kickoff</a>
         </div>
         <nav className="toc" aria-label="On this page">
           {toc.map(([id, l]) => <a key={id} href={`#${id}`} onClick={jump(id)}>{l}</a>)}
@@ -50,19 +49,19 @@ export default function Home({ onSchedule }) {
           <li><b>Your timeframe:</b> set the start date, the pace and any breaks, and every date on the site follows.</li>
           <li><b>Tracking:</b> tick tasks off, keep a log per week, and see the dashboard fill in.</li>
         </ul>
-        <p className="note">Where you start (my estimate from your answers, not sourced data): you design and own Terraform and Azure, your Python is scripts and automation, your AI experience is using AI tools, and your data experience is SQL. That is why the plan front-loads Python and LLM work and gives Terraform one week.</p>
+        <p className="note"><b>Who it suits:</b> someone with software or cloud and infrastructure experience who is moving into AI platform engineering. It assumes you can already write short Python scripts. If you cannot yet, add time before Week 1.</p>
       </section>
 
       <section id="research">
         <h2>The research behind it</h2>
-        <p>I compared four roles that fit your background and chose the AI/ML Platform Engineer as the first target because it reuses your Azure, Terraform and security work.</p>
+        <p>Four roles close to software, cloud and data engineering were compared. The AI/ML Platform Engineer was chosen as the first target because it builds most directly on cloud, infrastructure-as-code and security experience.</p>
         <div className="card table-wrap">
           <table>
-            <thead><tr><th>Role</th><th>Fit /10</th><th>Demand</th><th>Pay</th><th>Your odds</th><th>Stability</th></tr></thead>
+            <thead><tr><th>Role</th><th>Fit /10</th><th>Demand</th><th>Pay</th><th>Odds for a cloud engineer</th><th>Stability</th></tr></thead>
             <tbody>{ROLES.map((r) => <tr key={r.role}><td>{r.role}</td><td>{r.fit}</td><td>{r.demand}</td><td>{r.pay}</td><td>{r.odds}</td><td>{r.stab}</td></tr>)}</tbody>
           </table>
         </div>
-        <p className="muted"><b>Read this first:</b> the fit scores are my own judgment from your background, not published data. The market figures below come from job-board and recruiter pages that I read through search results, not by opening every page in full, so treat them as rough. The direction was consistent across sources; the exact numbers were not. A source note appears after each role.</p>
+        <p className="muted"><b>Read this first:</b> the fit scores are my own judgment for someone coming from cloud and infrastructure work, not published data. The market figures below come from job-board and recruiter pages that I read through search results, not by opening every page in full, so treat them as rough. The direction was consistent across sources; the exact numbers were not. A source note appears after each role.</p>
 
         <h3>1. AI/ML Platform Engineer (MLOps): the smallest market, the best match</h3>
         <ul className="plain">
@@ -78,7 +77,7 @@ export default function Home({ onSchedule }) {
         <ul className="plain">
           <li>One analysis counted 43,480 US postings since January 2026, and said the market stayed hot while the rest of tech hiring cooled.</li>
           <li>Two-thirds targeted mid or senior roles; 12% targeted junior engineers.</li>
-          <li>Python appeared in 71% of postings and LLMs in 66%. A bachelor's degree appeared in 85% to 94%, which your CS degree covers.</li>
+          <li>Python appeared in 71% of postings and LLMs in 66%. A bachelor's degree appeared in 85% to 94%, which a computer science degree covers.</li>
           <li>Robert Half put base pay at $134K to $193K, midpoint $170,750. Another source found a $140K median for postings requiring generative AI skills versus $77.6K without.</li>
           <li>Nearly half of postings were hybrid and 32% fully remote.</li>
         </ul>
@@ -87,7 +86,7 @@ export default function Home({ onSchedule }) {
         <h3>3. Data Engineer (Azure/Databricks): the safest base</h3>
         <ul className="plain">
           <li>18,786 US roles were posted since January 2026, with an overall median salary of $155,000.</li>
-          <li>Glassdoor's mid-level median base was $139K (no link kept). Columbus-area Azure Databricks listings mostly paid $110K to $136.5K, a national-board figure, so only a rough guide for Ohio.</li>
+          <li>Glassdoor's mid-level median base was $139K (no link kept). A regional search (Columbus, Ohio area) of Azure Databricks listings mostly paid $110K to $136.5K; it comes from a national job board, so treat it as a rough guide to regional pay.</li>
           <li>Almost every posting involved Python loading SQL-queryable data through a pipeline, so Python is your gap here too. About 40% mentioned AI.</li>
         </ul>
         <p className="muted">Sources consulted: <Cite n={[8, 12]} /></p>
@@ -100,7 +99,7 @@ export default function Home({ onSchedule }) {
         </ul>
         <p className="muted">Sources consulted: <Cite n={[9, 10]} /></p>
 
-        <p className="note"><b>Treat the loud growth numbers with suspicion.</b> The 143% (AI engineers) and 280% (agentic roles) growth figures came from vendor and recruiter sites that have a reason to hype. What matters more is that the roles exist and your experience level sits in the senior-heavy band where hiring is concentrated. Python was the biggest gap across all four roles, which is why the plan has you build real code instead of only collecting certificates.</p>
+        <p className="note"><b>Treat the loud growth numbers with suspicion.</b> The 143% (AI engineers) and 280% (agentic roles) growth figures came from vendor and recruiter sites that have a reason to hype. What matters more is that the roles exist and hiring is concentrated at mid and senior levels. Python was the most common requirement across all four roles, which is why the plan has you build real code instead of only collecting certificates.</p>
       </section>
 
       <section id="sync">
@@ -126,7 +125,7 @@ export default function Home({ onSchedule }) {
       <section id="limits">
         <h2>Limits and risks</h2>
         <ul className="plain">
-          <li><b>A secret gist is not private.</b> GitHub says anyone with the URL can view it, though it is hidden from search unless you are logged in as its author <Cite n={1} />. Do not write Kroger or personal details in your notes.</li>
+          <li><b>A secret gist is not private.</b> GitHub says anyone with the URL can view it, though it is hidden from search unless you are logged in as its author <Cite n={1} />. Do not write employer-confidential or personal details in your notes.</li>
           <li><b>The token is a password.</b> It is stored only in that browser, in the same <code>localStorage</code>. GitHub recommends fine-grained tokens, calls classic tokens less secure, and recommends an expiration; delete tokens you no longer need <Cite n={3} />. For this site, create a fine-grained token with only the <b>Gists: Read and write</b> account permission and no repository access <Cite n={[2, 3]} />. If GitHub rejects it, fall back to a classic token with only the <code>gist</code> scope. An expired token shows as “token rejected” and sync stops until you replace it.</li>
           <li><b>Device clocks decide “newest”.</b> Timestamps come from each device's clock. A device with a badly wrong clock can win or lose edits wrongly.</li>
           <li><b>Notes merge as a whole.</b> If you edit the same week's log on two devices within a minute, the later edit replaces the other. It does not blend the text.</li>
@@ -137,7 +136,7 @@ export default function Home({ onSchedule }) {
 
       <section id="cert">
         <h2>Certification after the plan</h2>
-        <p>My first draft of this plan named the AI-102 exam. Microsoft's retired-exams list shows AI-102 (Azure AI Engineer Associate) retired on June 30, 2026 <Cite n={13} />. That list does not name a replacement. A third-party article names <b>AI-103</b> as the suggested replacement, leading to the Azure AI App and Agent Developer Associate certification, and says there is no automatic migration from AI-102 <Cite n={15} />. Microsoft's AI-103 page confirms the exam exists as a <b>beta</b>, with a passing score of 700, offered in English only, with the price set by country or region <Cite n={14} />. Check that page for current status and price before you book. The plan targets spring 2027 for the exam, after Week 12.</p>
+        <p>Many study guides still point to the AI-102 exam. Microsoft's retired-exams list shows AI-102 (Azure AI Engineer Associate) retired on June 30, 2026 <Cite n={13} />. That list does not name a replacement. A third-party article names <b>AI-103</b> as the suggested replacement, leading to the Azure AI App and Agent Developer Associate certification, and says there is no automatic migration from AI-102 <Cite n={15} />. Microsoft's AI-103 page confirms the exam exists as a <b>beta</b>, with a passing score of 700, offered in English only, with the price set by country or region <Cite n={14} />. Check that page for current status and price before you book. The plan leaves the exam until after Week 12.</p>
         <p className="muted">One non-Microsoft source mentioned a newer MLOps-focused exam, AI-300. I could not confirm it, so confirm it on Microsoft Learn before planning around it.</p>
       </section>
 

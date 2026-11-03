@@ -64,7 +64,7 @@ for s in sections:
     m = re.match(r"Week (\d+) \((.*?)\)(?:, | )?:? ?(.*)", t)
     if t.startswith("Day 1 kickoff"):
         u = unit(s); u["title"] = t; plan["kickoff"] = u
-    elif t.startswith("What changed"):
+    elif t.startswith("How the plan is structured"):
         plan["changed"] = {"title": t, "blocks": s["blocks"]}
     elif t.startswith("Ground rules"):
         plan["rules"] = {"title": t, "blocks": s["blocks"]}
