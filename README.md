@@ -7,7 +7,8 @@ A small React site that holds the whole 90-day AI Platform Engineer plan (kickof
 - Kickoff and Weeks 1 to 12, each a checklist with links, a "done when" criterion and a log for your notes
 - Gates page for the four checkpoints (Weeks 2, 5, 8 and 11)
 - All links in one filterable table, plus site-wide search
-- Progress and notes are saved in your browser (`localStorage`); Export and Import in the sidebar back them up or move them between devices
+- Progress and notes are saved in your browser (`localStorage`); Export and Import in the sidebar back them up
+- Optional cross-device sync through a private GitHub gist (see below)
 - Works on phones, supports dark mode, prints cleanly
 
 ## Run it
@@ -24,5 +25,14 @@ The content lives in `src/data/plan.json`. It was generated from `scripts/plan-s
 ## Publish on GitHub Pages
 `.github/workflows/deploy.yml` tests, builds and deploys on every push to `main`. One-time setup: in the repository go to Settings, then Pages, and set Source to **GitHub Actions**.
 
+## Sync across devices
+There is no server: the site is static, so sync uses a **secret GitHub gist** as storage.
+
+1. Click **Sync devices** in the sidebar and follow the link to create a classic GitHub token with only the `gist` scope.
+2. First device: paste the token and leave Gist ID empty. A gist is created and its ID is shown.
+3. Other devices: paste the same token plus that Gist ID.
+
+Every check-off and note is timestamped, and each sync merges per item (newest edit wins), so edits from two devices combine instead of overwriting each other. It syncs shortly after each edit, when the tab regains focus, and every minute. The token is stored only in that browser; revoke it on GitHub if a device is lost. A secret gist is unlisted, not private to everyone: anyone with its URL can read it.
+
 ## Privacy
-The site is public, but your progress never leaves your browser. Keep personal or employer details out of your notes if you plan to export and commit them.
+The site is public. Without Sync, your progress never leaves your browser; with Sync it goes only to your gist. Keep personal or employer details out of your notes if you plan to export and commit them.

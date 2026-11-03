@@ -27,9 +27,50 @@ export function pct(ids, checked) {
 export function loadState() {
   try {
     const s = JSON.parse(localStorage.getItem(STORE_KEY))
-    if (s && typeof s === 'object') return { checked: s.checked || {}, notes: s.notes || {}, dates: s.dates || {} }
+    if (s && typeof s === 'object') return normalizeState(s)
   } catch { /* storage unavailable or corrupt: start fresh */ }
-  return { checked: {}, notes: {}, dates: {} }
+  return emptyState()
+}
+export const emptyState = () => ({ checked: {}, notes: {}, dates: {}, ts: {} })
+export const normalizeState = (s) => ({ checked: s?.checked || {}, notes: s?.notes || {}, dates: s?.dates || {}, ts: s?.ts || {} })
+
+// ---- sync support -------------------------------------------------------
+// Every edit is stamped: ts["c:<taskId>"] / ts["n:<noteKey>"] = epoch ms. Merging keeps the newer
+// edit per item, so two devices that edit different things never overwrite each other, and an
+// un-check is remembered (a timestamp with no value) instead of being resurrected by the other side.
+const hasValue = (st, k) => (k[0] === 'c' ? !!st.checked[k.slice(2)] : !!st.notes[k.slice(2)])
+const stamp = (st, k) => st.ts[k] ?? (hasValue(st, k) ? 1 : 0) // legacy data without stamps counts as old
+
+export function mergeStates(a, b) {
+  a = normalizeState(a); b = normalizeState(b)
+  const out = emptyState()
+  const keys = new Set([
+    ...Object.keys(a.ts), ...Object.keys(b.ts),
+    ...Object.keys(a.checked).map((i) => 'c:' + i), ...Object.keys(b.checked).map((i) => 'c:' + i),
+    ...Object.keys(a.notes).map((i) => 'n:' + i), ...Object.keys(b.notes).map((i) => 'n:' + i),
+  ])
+  for (const k of keys) {
+    const ta = stamp(a, k), tb = stamp(b, k)
+    if (ta === 0 && tb === 0) continue
+    const src = tb > ta ? b : a
+    const id = k.slice(2)
+    out.ts[k] = Math.max(ta, tb)
+    if (k[0] === 'c') {
+      if (src.checked[id]) { out.checked[id] = true; if (src.dates[id]) out.dates[id] = src.dates[id] }
+    } else if (src.notes[id]) out.notes[id] = src.notes[id]
+  }
+  return out
+}
+
+const stable = (o) => JSON.stringify(o, (_, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([x], [y]) => (x < y ? -1 : 1))) : v))
+export const sameState = (a, b) => stable(normalizeState(a)) === stable(normalizeState(b))
+
+// Clearing everything must also sync, so reset stamps each item as "emptied now".
+export function resetState(st, now = Date.now()) {
+  const out = emptyState()
+  const keys = new Set([...Object.keys(st.ts), ...Object.keys(st.checked).map((i) => 'c:' + i), ...Object.keys(st.notes).map((i) => 'n:' + i)])
+  keys.forEach((k) => { out.ts[k] = now })
+  return out
 }
 export function saveState(s) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(s)) } catch { /* ignore */ }

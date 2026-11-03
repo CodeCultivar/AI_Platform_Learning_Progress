@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil } from './lib.js'
+import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil, mergeStates, sameState, resetState, emptyState } from './lib.js'
+import { syncOnce } from './sync.js'
 import plan from './data/plan.json'
 
 describe('parseInline', () => {
@@ -44,5 +45,72 @@ describe('helpers', () => {
   })
   it('daysUntil', () => {
     expect(daysUntil('2026-11-10', new Date('2026-11-03T12:00:00'))).toBe(7)
+  })
+})
+
+const S = (checked = {}, notes = {}, ts = {}) => ({ checked, notes, dates: {}, ts })
+
+describe('mergeStates', () => {
+  it('keeps edits made on different devices', () => {
+    const a = S({ x: true }, {}, { 'c:x': 10 })
+    const b = S({ y: true }, {}, { 'c:y': 20 })
+    expect(mergeStates(a, b).checked).toEqual({ x: true, y: true })
+  })
+  it('newest edit wins, including an un-check', () => {
+    const a = S({ x: true }, {}, { 'c:x': 10 })
+    const b = S({}, {}, { 'c:x': 20 }) // unchecked later on another device
+    expect(mergeStates(a, b).checked).toEqual({})
+    expect(mergeStates(b, a).checked).toEqual({}) // order-independent
+  })
+  it('merges notes by timestamp', () => {
+    const a = S({}, { week1: 'old' }, { 'n:week1': 5 })
+    const b = S({}, { week1: 'new' }, { 'n:week1': 9 })
+    expect(mergeStates(a, b).notes.week1).toBe('new')
+  })
+  it('treats unstamped legacy data as old but not lost', () => {
+    const legacy = S({ x: true }, {}, {})
+    expect(mergeStates(legacy, emptyState()).checked).toEqual({ x: true })
+    expect(mergeStates(legacy, S({}, {}, { 'c:x': 3 })).checked).toEqual({})
+  })
+  it('is idempotent', () => {
+    const a = S({ x: true }, { k: 'v' }, { 'c:x': 1, 'n:k': 2 })
+    expect(sameState(mergeStates(a, a), a)).toBe(true)
+  })
+  it('reset propagates as a newer empty state', () => {
+    const a = S({ x: true }, { k: 'v' }, { 'c:x': 1, 'n:k': 2 })
+    const r = resetState(a, 100)
+    expect(mergeStates(a, r).checked).toEqual({})
+    expect(mergeStates(a, r).notes).toEqual({})
+  })
+})
+
+describe('syncOnce', () => {
+  const mk = (remote) => {
+    const calls = []
+    const f = async (url, init = {}) => {
+      calls.push([init.method || 'GET', url.replace('https://api.github.com', '')])
+      if (init.method === 'POST') return { ok: true, json: async () => ({ id: 'g1' }) }
+      if (init.method === 'PATCH') { remote.content = JSON.parse(init.body).files['progress.json'].content; return { ok: true, json: async () => ({}) } }
+      return { ok: true, json: async () => ({ files: { 'progress.json': { content: remote.content } } }) }
+    }
+    return { f, calls }
+  }
+  it('creates a gist on first use', async () => {
+    const { f, calls } = mk({})
+    const r = await syncOnce({ token: 't' }, S({ x: true }, {}, { 'c:x': 1 }), f)
+    expect(r.gistId).toBe('g1'); expect(calls).toEqual([['POST', '/gists']])
+  })
+  it('merges remote changes and pushes only when remote is behind', async () => {
+    const remote = { content: JSON.stringify(S({ y: true }, {}, { 'c:y': 5 })) }
+    const { f, calls } = mk(remote)
+    const r = await syncOnce({ token: 't', gistId: 'g1' }, S({ x: true }, {}, { 'c:x': 9 }), f)
+    expect(r.state.checked).toEqual({ x: true, y: true }); expect(r.pushed).toBe(true)
+    calls.length = 0
+    const r2 = await syncOnce({ token: 't', gistId: 'g1' }, r.state, f)
+    expect(r2.pushed).toBe(false); expect(calls).toEqual([['GET', '/gists/g1']])
+  })
+  it('reports a rejected token', async () => {
+    const f = async () => ({ ok: false, status: 401 })
+    await expect(syncOnce({ token: 'bad', gistId: 'g1' }, emptyState(), f)).rejects.toThrow(/token rejected/)
   })
 })

@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import plan from './data/plan.json'
 import { Ring } from './components/Inline.jsx'
 import { Dashboard, Kickoff, Week, Gates, Links, Guide, After, Search } from './components/Views.jsx'
-import { loadState, saveState, pct, weekTaskIds, kickoffIds, taskIds, searchPlan, currentWeek } from './lib.js'
+import SyncPanel from './components/SyncPanel.jsx'
+import { loadState, saveState, pct, weekTaskIds, kickoffIds, taskIds, searchPlan, currentWeek, mergeStates, normalizeState, resetState, sameState } from './lib.js'
+import { loadConfig, saveConfig, clearConfig, syncOnce } from './sync.js'
 
 function useHash() {
   const [h, setH] = useState(window.location.hash || '#/')
@@ -20,6 +22,48 @@ export default function App() {
   const [q, setQ] = useState('')
   const [menu, setMenu] = useState(false)
   const fileRef = useRef(null)
+  const [cfg, setCfg] = useState(loadConfig)
+  const [status, setStatus] = useState({ state: 'off', msg: '', last: null })
+  const [showSync, setShowSync] = useState(false)
+  const stRef = useRef(st); stRef.current = st
+  const cfgRef = useRef(cfg); cfgRef.current = cfg
+  const busy = useRef(false); const again = useRef(false)
+
+  const runSync = useCallback(async () => {
+    const c = cfgRef.current
+    if (!c) return
+    if (busy.current) { again.current = true; return }
+    busy.current = true
+    setStatus((x) => ({ ...x, state: 'syncing' }))
+    try {
+      const r = await syncOnce(c, stRef.current)
+      if (r.gistId !== c.gistId) { const n = { ...c, gistId: r.gistId }; saveConfig(n); setCfg(n); cfgRef.current = n }
+      // merge into the latest local state: edits made while the request was in flight are kept
+      setSt((cur) => { const m = mergeStates(cur, r.state); return sameState(m, cur) ? cur : m })
+      setStatus({ state: 'ok', msg: '', last: new Date() })
+    } catch (e) {
+      setStatus((x) => ({ ...x, state: 'error', msg: e.message || 'sync failed' }))
+    } finally {
+      busy.current = false
+      if (again.current) { again.current = false; runSync() }
+    }
+  }, [])
+
+  // push shortly after any edit; pull on start, on tab focus and every minute
+  useEffect(() => { if (!cfg) return; const t = setTimeout(runSync, 1500); return () => clearTimeout(t) }, [st, cfg, runSync])
+  useEffect(() => {
+    if (!cfg) return
+    const vis = () => document.visibilityState === 'visible' && runSync()
+    document.addEventListener('visibilitychange', vis)
+    const iv = setInterval(vis, 60000)
+    return () => { document.removeEventListener('visibilitychange', vis); clearInterval(iv) }
+  }, [cfg, runSync])
+
+  const connect = (token, gistId) => {
+    const n = { token, gistId: gistId || '' }
+    saveConfig(n); cfgRef.current = n; setCfg(n); setStatus({ state: 'syncing', msg: '', last: null }); runSync()
+  }
+  const disconnect = () => { clearConfig(); cfgRef.current = null; setCfg(null); setStatus({ state: 'off', msg: '', last: null }); setShowSync(false) }
 
   useEffect(() => { saveState(st) }, [st])
   useEffect(() => { setMenu(false) }, [hash])
@@ -28,9 +72,13 @@ export default function App() {
     const checked = { ...s.checked }
     const dates = { ...s.dates }
     if (checked[id]) { delete checked[id]; delete dates[id] } else { checked[id] = true; dates[id] = new Date().toISOString().slice(0, 10) }
-    return { ...s, checked, dates }
+    return { ...s, checked, dates, ts: { ...s.ts, ['c:' + id]: Date.now() } }
   })
-  const setNote = (k, v) => setSt((s) => ({ ...s, notes: { ...s.notes, [k]: v } }))
+  const setNote = (k, v) => setSt((s) => {
+    const notes = { ...s.notes }
+    if (v) notes[k] = v; else delete notes[k]
+    return { ...s, notes, ts: { ...s.ts, ['n:' + k]: Date.now() } }
+  })
 
   const results = useMemo(() => searchPlan(q), [q])
   const route = hash.replace(/^#\/?/, '').split('/')
@@ -45,11 +93,11 @@ export default function App() {
   const importData = (e) => {
     const f = e.target.files[0]; if (!f) return
     f.text().then((t) => {
-      try { const d = JSON.parse(t); setSt({ checked: d.checked || {}, notes: d.notes || {}, dates: d.dates || {} }) } catch { alert('That file is not a valid progress export.') }
+      try { const d = normalizeState(JSON.parse(t)); setSt((cur) => mergeStates(cur, d)) } catch { alert('That file is not a valid progress export.') }
     })
     e.target.value = ''
   }
-  const reset = () => { if (confirm('Clear all progress and notes in this browser? Export first if you want a backup.')) setSt({ checked: {}, notes: {}, dates: {} }) }
+  const reset = () => { if (confirm('Clear all progress and notes in this browser? Export first if you want a backup.')) setSt((cur) => resetState(cur)) }
 
   let view
   if (q.trim().length > 0) view = <Search results={results} q={q} />
@@ -93,11 +141,13 @@ export default function App() {
           <button onClick={exportData}>Export</button>
           <button onClick={() => fileRef.current.click()}>Import</button>
           <button onClick={reset} className="danger">Reset</button>
+          <button className={`sync-btn ${status.state}`} onClick={() => setShowSync(true)}>{cfg ? (status.state === 'error' ? 'Sync problem' : status.state === 'syncing' ? 'Syncing…' : 'Synced ✓') : 'Sync devices'}</button>
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={importData} />
-          <p>Progress is saved in this browser. Export to back it up or move devices.</p>
+          <p>{cfg ? 'Progress syncs through your private gist.' : 'Progress is saved in this browser. Turn on Sync to share it across devices.'}</p>
         </div>
       </aside>
       <main id="main">{view}</main>
+      {showSync && <SyncPanel cfg={cfg} status={status} onConnect={connect} onDisconnect={disconnect} onSyncNow={runSync} onClose={() => setShowSync(false)} />}
     </div>
   )
 }
