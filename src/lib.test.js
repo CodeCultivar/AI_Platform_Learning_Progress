@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil, mergeStates, sameState, resetState, emptyState } from './lib.js'
 import { syncOnce } from './sync.js'
+import { SOURCES } from './data/sources.js'
 import plan from './data/plan.json'
 
 describe('parseInline', () => {
@@ -112,5 +113,12 @@ describe('syncOnce', () => {
   it('reports a rejected token', async () => {
     const f = async () => ({ ok: false, status: 401 })
     await expect(syncOnce({ token: 'bad', gistId: 'g1' }, emptyState(), f)).rejects.toThrow(/token rejected/)
+  })
+})
+
+describe('sources', () => {
+  it('are numbered 1..n, unique and https', () => {
+    expect(SOURCES.map((s) => s.n)).toEqual(SOURCES.map((_, i) => i + 1))
+    SOURCES.forEach((s) => expect(s.url.startsWith('https://')).toBe(true))
   })
 })

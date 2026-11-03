@@ -1,0 +1,18 @@
+// Every source cited on the Home page. `n` is the number shown as [n].
+export const SOURCES = [
+  { n: 1, group: 'Sync and hosting', title: 'GitHub Docs: Creating gists', url: 'https://docs.github.com/en/get-started/writing-on-github/editing-and-sharing-content-with-gists/creating-gists', note: 'Secret gists are not private; anyone with the URL can view them.' },
+  { n: 2, group: 'Sync and hosting', title: 'GitHub Docs: REST API endpoints for gists', url: 'https://docs.github.com/en/rest/gists/gists', note: 'POST /gists creates and PATCH /gists/{gist_id} updates; fine-grained tokens need the Gists user permission (write).' },
+  { n: 3, group: 'Sync and hosting', title: 'GitHub Docs: Managing your personal access tokens', url: 'https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens', note: 'GitHub recommends fine-grained tokens; classic tokens are less secure; add an expiration; delete tokens you no longer need.' },
+  { n: 4, group: 'Sync and hosting', title: 'GitHub Docs: Configuring a publishing source for GitHub Pages', url: 'https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site', note: 'Settings, Pages, Source: GitHub Actions, for a custom workflow deployment.' },
+  { n: 5, group: 'Sync and hosting', title: 'MDN: Window.localStorage', url: 'https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage', note: 'Per-origin storage with no expiry; cleared when the last private tab closes; can throw if the browser blocks storage.' },
+  { n: 6, group: 'Job market', title: 'Axial Search: AI Engineering hiring', url: 'https://axialsearch.com/insights/ai-engineering-hiring' },
+  { n: 7, group: 'Job market', title: 'Axial Search: MLOps job demand', url: 'https://axialsearch.com/insights/mlops-job-demand' },
+  { n: 8, group: 'Job market', title: 'Axial Search: Data engineering jobs', url: 'https://axialsearch.com/insights/data-engineering-jobs' },
+  { n: 9, group: 'Job market', title: 'Scaler: Agentic AI Engineer salary and job market', url: 'https://www.scaler.com/topics/agentic-ai/agentic-ai-engineer-salary-job-market/' },
+  { n: 10, group: 'Job market', title: 'Agentic Engineering Jobs: MCP listings', url: 'https://agentic-engineering-jobs.com/jobs/mcp/onsite' },
+  { n: 11, group: 'Job market', title: 'FutureProofing: AI engineer salary trends', url: 'https://www.futureproofing.dev/resources/ai-talent-gap/ai-engineer-salary-trends' },
+  { n: 12, group: 'Job market', title: 'ZipRecruiter: Azure Databricks data engineer jobs', url: 'https://www.ziprecruiter.com/t/Most-Popular-Types-Of-Full-Time-Databricks-Data-Engineer-Jobs' },
+  { n: 13, group: 'Certification', title: 'Microsoft Learn: Retired certification exams', url: 'https://learn.microsoft.com/certifications/retired-certification-exams', note: 'Lists AI-102 (Azure AI Engineer Associate) as retired on June 30, 2026. Does not name a replacement.' },
+  { n: 14, group: 'Certification', title: 'Microsoft Learn: Exam AI-103', url: 'https://learn.microsoft.com/credentials/certifications/exams/ai-103/', note: 'Azure AI Apps and Agents Developer Associate; beta; passing score 700; English only; price depends on country or region.' },
+  { n: 15, group: 'Certification', title: 'Vlad Talks Tech: Microsoft certification retirements 2026', url: 'https://vladtalkstech.com/microsoft-learning-and-credential-news/microsoft-certification-retirements-2026/', note: 'Third-party article naming AI-103 as the suggested replacement and noting there is no automatic migration.' },
+]

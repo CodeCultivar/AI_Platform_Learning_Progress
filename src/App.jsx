@@ -3,6 +3,7 @@ import plan from './data/plan.json'
 import { Ring } from './components/Inline.jsx'
 import { Dashboard, Kickoff, Week, Gates, Links, Guide, After, Search } from './components/Views.jsx'
 import SyncPanel from './components/SyncPanel.jsx'
+import Home from './components/Home.jsx'
 import { loadState, saveState, pct, weekTaskIds, kickoffIds, taskIds, searchPlan, currentWeek, mergeStates, normalizeState, resetState, sameState } from './lib.js'
 import { loadConfig, saveConfig, clearConfig, syncOnce } from './sync.js'
 
@@ -107,7 +108,8 @@ export default function App() {
   else if (route[0] === 'links') view = <Links />
   else if (route[0] === 'guide') view = <Guide />
   else if (route[0] === 'after') view = <After />
-  else view = <Dashboard st={st} toggle={toggle} />
+  else if (route[0] === 'dashboard') view = <Dashboard st={st} toggle={toggle} />
+  else view = <Home />
 
   const active = (r) => (route[0] === r ? 'active' : '')
   const isWeek = (n) => route[0] === 'week' && Number(route[1]) === n
@@ -120,7 +122,8 @@ export default function App() {
         <a className="brand" href="#/" onClick={() => setQ('')}><span className="logo">✓</span><span>90-Day AI Platform<small>{total}% complete</small></span></a>
         <input className="field" type="search" placeholder="Search the plan…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search the plan" />
         <nav>
-          <a className={route[0] === '' || route[0] === undefined ? 'active' : ''} href="#/" onClick={() => setQ('')}>Dashboard</a>
+          <a className={route[0] === '' || route[0] === undefined ? 'active' : ''} href="#/" onClick={() => setQ('')}>Home</a>
+          <a className={active('dashboard')} href="#/dashboard" onClick={() => setQ('')}>Dashboard</a>
           <a className={active('kickoff')} href="#/kickoff" onClick={() => setQ('')}>
             Kickoff · tonight <em>{pct(kickoffIds(), st.checked)}%</em>
           </a>
