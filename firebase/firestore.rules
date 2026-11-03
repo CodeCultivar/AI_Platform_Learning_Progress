@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // One document per signed-in user: users/{uid}/progress/state
+    match /users/{uid}/progress/{doc} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow write: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['data', 'updatedAt'])
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 500000;
+        // Recommended for a personal project: also lock it to your own Google account so
+        // strangers cannot use your free quota. Add this line before the semicolon above:
+        //   && request.auth.token.email == 'YOUR_EMAIL@gmail.com'
+    }
+    // everything else stays denied by default
+  }
+}

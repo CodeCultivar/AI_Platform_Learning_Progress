@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil, mergeStates, sameState, resetState, emptyState, buildSchedule, normalizeSchedule, DEFAULT_SCHEDULE, hoursPerWeek, fmtRange } from './lib.js'
 import { syncOnce } from './sync.js'
 import { SOURCES } from './data/sources.js'
+import { validFirebaseConfig, loadFirebaseConfig, mergeWithRemote, encodeState, decodeState, describeSyncError } from './sync-cloud.js'
 import plan from './data/plan.json'
 
 describe('parseInline', () => {
@@ -172,5 +173,56 @@ describe('sources', () => {
   it('are numbered 1..n, unique and https', () => {
     expect(SOURCES.map((s) => s.n)).toEqual(SOURCES.map((_, i) => i + 1))
     SOURCES.forEach((s) => expect(s.url.startsWith('https://')).toBe(true))
+  })
+})
+
+describe('google/firebase sync logic', () => {
+  const good = { apiKey: 'k', authDomain: 'p.firebaseapp.com', projectId: 'p', appId: '1:2:web:3' }
+  const res = (body, ok = true) => async () => ({ ok, text: async () => body })
+  it('validates the config and rejects placeholders', () => {
+    expect(validFirebaseConfig(good)).toBe(true)
+    expect(validFirebaseConfig({ ...good, apiKey: 'YOUR_API_KEY' })).toBe(false)
+    expect(validFirebaseConfig({ ...good, appId: '' })).toBe(false)
+    expect(validFirebaseConfig(null)).toBe(false)
+  })
+  it('loads the config only when the file is real JSON with real values', async () => {
+    expect(await loadFirebaseConfig(res(JSON.stringify(good)), 'https://x.github.io/app/')).toEqual(good)
+    expect(await loadFirebaseConfig(res('', false), 'https://x.github.io/app/')).toBeNull()
+    expect(await loadFirebaseConfig(res('<!doctype html><html>'), 'https://x.github.io/app/')).toBeNull() // host returned the index page
+    expect(await loadFirebaseConfig(res(JSON.stringify({ ...good, apiKey: 'YOUR_API_KEY' })), 'https://x.github.io/app/')).toBeNull()
+    expect(await loadFirebaseConfig(async () => { throw new Error('offline') }, 'https://x.github.io/app/')).toBeNull()
+  })
+  it('first sync creates the cloud copy', () => {
+    const local = S({ x: true }, {}, { 'c:x': 1 })
+    const r = mergeWithRemote(local, undefined)
+    expect(r.push).toBe(true); expect(r.merged.checked).toEqual({ x: true })
+  })
+  it('does not write when the cloud copy is already up to date', () => {
+    const local = S({ x: true }, {}, { 'c:x': 1 })
+    expect(mergeWithRemote(local, encodeState(local)).push).toBe(false)
+  })
+  it('merges a newer cloud copy and writes back only what is missing', () => {
+    const local = S({ x: true }, {}, { 'c:x': 5 })
+    const remote = S({ y: true }, { w1: 'n' }, { 'c:y': 9, 'n:w1': 9 })
+    const r = mergeWithRemote(local, encodeState(remote))
+    expect(r.merged.checked).toEqual({ x: true, y: true }); expect(r.merged.notes.w1).toBe('n'); expect(r.push).toBe(true)
+    expect(mergeWithRemote(r.merged, encodeState(r.merged)).push).toBe(false)
+  })
+  it('two devices that sync in turn converge to the same state', () => {
+    const a = S({ a: true }, {}, { 'c:a': 3 }), b = S({ b: true }, {}, { 'c:b': 4 })
+    const cloud1 = mergeWithRemote(a, undefined).merged
+    const bMerged = mergeWithRemote(b, encodeState(cloud1)).merged
+    const aMerged = mergeWithRemote(a, encodeState(bMerged)).merged
+    expect(sameState(aMerged, bMerged)).toBe(true); expect(aMerged.checked).toEqual({ a: true, b: true })
+  })
+  it('rejects a corrupt cloud copy instead of overwriting it', () => {
+    expect(() => decodeState('not json')).toThrow(/not valid JSON/)
+    expect(() => mergeWithRemote(emptyState(), '{oops')).toThrow()
+  })
+  it('explains common Google errors', () => {
+    expect(describeSyncError({ code: 'auth/unauthorized-domain' })).toMatch(/Authorized domains/)
+    expect(describeSyncError({ code: 'permission-denied' })).toMatch(/security rules/)
+    expect(describeSyncError({ code: 'auth/popup-blocked' })).toMatch(/popup/)
+    expect(describeSyncError(new Error('boom'))).toBe('boom')
   })
 })

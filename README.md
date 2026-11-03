@@ -10,7 +10,7 @@ A small React site that holds the whole 90-day AI Platform Engineer plan (kickof
 - Gates page for the four checkpoints (Weeks 2, 5, 8 and 11)
 - All links in one filterable table, plus site-wide search
 - Progress and notes are saved in your browser (`localStorage`); Export and Import in the sidebar back them up
-- Optional cross-device sync through a private GitHub gist (see below)
+- Optional cross-device sync with Google sign-in (Firebase) or a private GitHub gist (see below)
 - Works on phones, supports dark mode, prints cleanly
 
 ## Run it
@@ -28,13 +28,13 @@ The plan holds no calendar dates; they are computed from your schedule settings 
 `.github/workflows/deploy.yml` tests, builds and deploys on every push to `main`. One-time setup: in the repository go to Settings, then Pages, and set Source to **GitHub Actions**.
 
 ## Sync across devices
-There is no server: the site is static, so sync uses a **secret GitHub gist** as storage.
+Two options, both merge per item (newest edit wins), so edits from different devices combine instead of overwriting each other.
 
-1. Click **Sync devices** in the sidebar and follow the link to create a fine-grained GitHub token with no repository access and only the **Gists: Read and write** account permission (GitHub documents this permission for the gist endpoints). If GitHub rejects it, use a classic token with only the `gist` scope.
-2. First device: paste the token and leave Gist ID empty. A gist is created and its ID is shown.
-3. Other devices: paste the same token plus that Gist ID.
+**Google sign-in (recommended).** Progress lives in Cloud Firestore in a Firebase project you own, behind owner-only security rules, and you sign in with Google. Setup takes about 10 minutes, once: see [docs/GOOGLE_SYNC_SETUP.md](docs/GOOGLE_SYNC_SETUP.md). The site reads `public/firebase-config.json` (copy `public/firebase-config.example.json`); until that file exists, the Sync panel shows the setup steps. The config values are public by design; the rules in `firebase/firestore.rules` are what protect your data.
 
-Every check-off and note is timestamped, and each sync merges per item (newest edit wins), so edits from two devices combine instead of overwriting each other. It syncs shortly after each edit, when the tab regains focus, and every minute. The token is stored only in that browser; delete it on GitHub if a device is lost. A secret gist is unlisted, not private to everyone: anyone with its URL can read it.
+**GitHub gist.** No Google setup: paste a GitHub token with only the Gists permission and the site keeps one secret gist. A secret gist is unlisted, not private.
+
+Either way it syncs shortly after each edit, when the tab regains focus and every minute (Google also pushes live updates). The Google path has not been run against a real Firebase project by its author; your first sign-in is the real test.
 
 ## Privacy
-The site is public. Without Sync, your progress never leaves your browser; with Sync it goes only to your gist. Keep personal or employer details out of your notes if you plan to export and commit them.
+The site is public. Without Sync, your progress never leaves your browser; with Sync it goes only to your own Firestore project or gist. Keep personal or employer details out of your notes if you plan to export and commit them.

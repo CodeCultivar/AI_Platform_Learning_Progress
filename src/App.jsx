@@ -8,6 +8,7 @@ import SchedulePanel from './components/SchedulePanel.jsx'
 import { SchedCtx } from './schedule-context.js'
 import { loadState, saveState, pct, weekTaskIds, kickoffIds, taskIds, searchPlan, currentWeek, buildSchedule, mergeStates, normalizeState, resetState, sameState } from './lib.js'
 import { loadConfig, saveConfig, clearConfig, syncOnce } from './sync.js'
+import { loadFirebaseConfig, initCloud, describeSyncError, isQuietAuthError } from './sync-cloud.js'
 
 function useHash() {
   const [h, setH] = useState(window.location.hash || '#/')
@@ -25,28 +26,58 @@ export default function App() {
   const [q, setQ] = useState('')
   const [menu, setMenu] = useState(false)
   const fileRef = useRef(null)
-  const [cfg, setCfg] = useState(loadConfig)
+  const [cfg, setCfg] = useState(loadConfig) // GitHub gist sync settings
+  const [fb, setFb] = useState({ phase: 'loading', config: null, api: null, user: null, error: '' }) // Google / Firebase
   const [status, setStatus] = useState({ state: 'off', msg: '', last: null })
   const [showSync, setShowSync] = useState(false)
   const [showSched, setShowSched] = useState(false)
   const stRef = useRef(st); stRef.current = st
   const cfgRef = useRef(cfg); cfgRef.current = cfg
+  const fbRef = useRef(fb); fbRef.current = fb
   const busy = useRef(false); const again = useRef(false)
+  const syncMode = fb.user ? 'google' : cfg ? 'gist' : null
+  const syncModeRef = useRef(syncMode); syncModeRef.current = syncMode
+
+  // Firebase is only loaded when the site ships a valid firebase-config.json
+  useEffect(() => {
+    let dead = false; let off = () => {}
+    loadFirebaseConfig().then(async (config) => {
+      if (dead) return
+      if (!config) { setFb((f) => ({ ...f, phase: 'unconfigured' })); return }
+      try {
+        const api = await initCloud(config)
+        if (dead) return
+        setFb((f) => ({ ...f, phase: 'ready', config, api }))
+        off = api.onUser((user) => setFb((f) => ({ ...f, user })))
+      } catch (e) { setFb((f) => ({ ...f, phase: 'error', error: describeSyncError(e) })) }
+    })
+    return () => { dead = true; off() }
+  }, [])
+
+  // signing in with Google replaces the gist connection so two syncs never run side by side (local data is kept)
+  useEffect(() => { if (fb.user && cfg) { clearConfig(); setCfg(null) } }, [fb.user, cfg])
 
   const runSync = useCallback(async () => {
-    const c = cfgRef.current
-    if (!c) return
+    const mode = syncModeRef.current
+    if (!mode) return
     if (busy.current) { again.current = true; return }
     busy.current = true
     setStatus((x) => ({ ...x, state: 'syncing' }))
     try {
-      const r = await syncOnce(c, stRef.current)
-      if (r.gistId !== c.gistId) { const n = { ...c, gistId: r.gistId }; saveConfig(n); setCfg(n); cfgRef.current = n }
+      let merged
+      if (mode === 'google') {
+        merged = (await fbRef.current.api.syncOnce(stRef.current)).state
+      } else {
+        const c = cfgRef.current
+        const r = await syncOnce(c, stRef.current)
+        if (r.gistId !== c.gistId) { const n = { ...c, gistId: r.gistId }; saveConfig(n); setCfg(n); cfgRef.current = n }
+        merged = r.state
+      }
       // merge into the latest local state: edits made while the request was in flight are kept
-      setSt((cur) => { const m = mergeStates(cur, r.state); return sameState(m, cur) ? cur : m })
+      setSt((cur) => { const m = mergeStates(cur, merged); return sameState(m, cur) ? cur : m })
       setStatus({ state: 'ok', msg: '', last: new Date() })
     } catch (e) {
-      setStatus((x) => ({ ...x, state: 'error', msg: e.message || 'sync failed' }))
+      setStatus((x) => ({ ...x, state: 'error', msg: mode === 'google' ? describeSyncError(e) : e.message || 'sync failed' }))
     } finally {
       busy.current = false
       if (again.current) { again.current = false; runSync() }
@@ -54,23 +85,36 @@ export default function App() {
   }, [])
 
   // push shortly after any edit; pull on start, on tab focus and every minute
-  useEffect(() => { if (!cfg) return; const t = setTimeout(runSync, 1500); return () => clearTimeout(t) }, [st, cfg, runSync])
+  useEffect(() => { if (!syncMode) return; const t = setTimeout(runSync, 1500); return () => clearTimeout(t) }, [st, syncMode, runSync])
   useEffect(() => {
-    if (!cfg) return
+    if (!syncMode) return
     const vis = () => document.visibilityState === 'visible' && runSync()
     document.addEventListener('visibilitychange', vis)
     const iv = setInterval(vis, 60000)
     return () => { document.removeEventListener('visibilitychange', vis); clearInterval(iv) }
-  }, [cfg, runSync])
+  }, [syncMode, runSync])
+
+  // Google only: pull edits from other devices the moment they land
+  useEffect(() => {
+    if (syncMode !== 'google') return
+    return fb.api.subscribe(
+      (remote) => setSt((cur) => { const m = mergeStates(cur, remote); return sameState(m, cur) ? cur : m }),
+      (e) => setStatus((x) => ({ ...x, state: 'error', msg: describeSyncError(e) })),
+    )
+  }, [syncMode, fb.api])
 
   const connect = (token, gistId) => {
     const n = { token, gistId: gistId || '' }
-    saveConfig(n); cfgRef.current = n; setCfg(n); setStatus({ state: 'syncing', msg: '', last: null }); runSync()
+    saveConfig(n); cfgRef.current = n; syncModeRef.current = 'gist'; setCfg(n); setStatus({ state: 'syncing', msg: '', last: null }); runSync()
   }
-  const disconnect = () => { clearConfig(); cfgRef.current = null; setCfg(null); setStatus({ state: 'off', msg: '', last: null }); setShowSync(false) }
-
-  useEffect(() => { saveState(st) }, [st])
-  useEffect(() => { setMenu(false) }, [hash])
+  const disconnect = () => { clearConfig(); cfgRef.current = null; setCfg(null); setStatus({ state: 'off', msg: '', last: null }) }
+  const googleSignIn = async () => {
+    setStatus({ state: 'syncing', msg: '', last: null })
+    try { await fb.api.signIn(); setStatus({ state: 'syncing', msg: '', last: null }) } catch (e) {
+      setStatus(isQuietAuthError(e) ? { state: 'off', msg: '', last: null } : { state: 'error', msg: describeSyncError(e), last: null })
+    }
+  }
+  const googleSignOut = async () => { try { await fb.api.signOut() } finally { setStatus({ state: 'off', msg: '', last: null }) } }
 
   const toggle = (id) => setSt((s) => {
     const checked = { ...s.checked }
@@ -151,14 +195,16 @@ export default function App() {
           <button onClick={() => fileRef.current.click()}>Import</button>
           <button onClick={reset} className="danger">Reset</button>
           <button className="sync-btn" onClick={() => setShowSched(true)}>Schedule · {sched.hours} h/week</button>
-          <button className={`sync-btn ${status.state}`} onClick={() => setShowSync(true)}>{cfg ? (status.state === 'error' ? 'Sync problem' : status.state === 'syncing' ? 'Syncing…' : 'Synced ✓') : 'Sync devices'}</button>
+          <button className={`sync-btn ${status.state}`} onClick={() => setShowSync(true)}>{syncMode ? (status.state === 'error' ? 'Sync problem' : status.state === 'syncing' ? 'Syncing…' : 'Synced ✓') : 'Sync devices'}</button>
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={importData} />
-          <p>{cfg ? 'Progress syncs through your private gist.' : 'Progress is saved in this browser. Turn on Sync to share it across devices.'}</p>
+          <p>{syncMode === 'google' ? 'Progress syncs with your Google account.' : syncMode === 'gist' ? 'Progress syncs through your private gist.' : 'Progress is saved in this browser. Turn on Sync to share it across devices.'}</p>
         </div>
       </aside>
       <main id="main">{view}</main>
       {showSched && <SchedulePanel value={st.settings.schedule} onSave={saveSchedule} onClose={() => setShowSched(false)} />}
-      {showSync && <SyncPanel cfg={cfg} status={status} onConnect={connect} onDisconnect={disconnect} onSyncNow={runSync} onClose={() => setShowSync(false)} />}
+      {showSync && <SyncPanel active={syncMode} status={status} onSyncNow={runSync} onClose={() => setShowSync(false)}
+        google={{ phase: fb.phase, user: fb.user, error: fb.error, onSignIn: googleSignIn, onSignOut: googleSignOut }}
+        gist={{ cfg, onConnect: connect, onDisconnect: disconnect }} />}
     </div>
     </SchedCtx.Provider>
   )

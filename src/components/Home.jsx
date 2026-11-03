@@ -107,29 +107,34 @@ export default function Home({ onSchedule }) {
         <h3>Without sync: one browser, one copy</h3>
         <p>By default your ticks and notes live in your browser's <code>localStorage</code>. It is kept per site address, survives closing the browser, and never expires on its own <Cite n={5} />. It is cleared when the last private-browsing tab closes, and a browser set to block site data can refuse it entirely <Cite n={5} />. Nothing connects one browser's copy to another's, which is why a second device starts empty.</p>
 
-        <h3>With sync: a private gist as shared storage</h3>
-        <p>This site is static pages on GitHub Pages, so it has no server of its own to store your data. Sync borrows one: a <b>secret GitHub gist</b> in your account holds a single file, <code>progress.json</code>. Your browser talks to GitHub directly. Nothing passes through any server of mine.</p>
+        <h3>With Google sync (recommended)</h3>
+        <p>You sign in with your Google account, and your progress is stored in a small Firestore database inside a Firebase project that <b>you</b> own. The site talks to Google directly from your browser; nothing passes through a server of mine. There is no token to paste, and signing in on a second device is all it takes.</p>
         <ol className="plain steps">
-          <li><b>Connect.</b> You paste a GitHub token. On the first device the site creates the gist (<code>POST /gists</code>); on others you paste its ID <Cite n={2} />.</li>
+          <li><b>Sign in.</b> A Google popup confirms who you are. Your copy lives at one path that only your account can read or write, enforced by security rules <Cite n={17} />.</li>
           <li><b>Stamp every edit.</b> Each tick or note edit records the time it was made, per item.</li>
-          <li><b>Pull and merge.</b> The site reads the gist and merges it with your local copy. For each item, the newest edit wins. An un-check is remembered as an edit, so an old tick on another device can't bring it back, and Reset syncs as an edit too.</li>
-          <li><b>Push only if needed.</b> If the merged result differs from the gist, the site updates it (<code>PATCH /gists/{'{id}'}</code>) <Cite n={2} />. If not, it sends nothing.</li>
-          <li><b>When it runs.</b> About 1.5 seconds after you stop editing, when you return to the tab, and once a minute while the tab is visible.</li>
+          <li><b>Merge safely.</b> The site reads the cloud copy, merges it with your local copy (the newest edit per item wins; an un-check is remembered as an edit, so an old tick on another device cannot bring it back; Reset syncs as an edit too) and writes back only if the cloud copy was behind. This happens inside a Firestore transaction, so two devices syncing at the same moment cannot overwrite each other.</li>
+          <li><b>Live updates.</b> While the site is open, changes from your other devices arrive within seconds. Your own edits are pushed about 1.5 seconds after you stop typing, and the site re-checks when you return to the tab and once a minute.</li>
         </ol>
         <p>Because the merge is per item, ticking Week 3 on your laptop and Week 4 on your phone leaves both ticks in place. Your schedule settings (start date, pace, breaks) sync the same way, so every device shows the same dates.</p>
+        <p><b>One-time setup:</b> the site needs a Firebase project, which takes about 10 minutes and has no cost on the free plan for something this small <Cite n={18} />. The steps are in <code>docs/GOOGLE_SYNC_SETUP.md</code>, and the Sync panel shows them until the project's config file is added. The config values (including the API key) are public by design: Firebase says its keys are not secrets and that security rules, not the key, control access <Cite n={16} />.</p>
+
+        <h3>Alternative: a secret GitHub gist</h3>
+        <p>The same merge can run against a <b>secret GitHub gist</b> in your own account instead, using a GitHub token you paste into the site (<code>POST /gists</code> to create, <code>PATCH /gists/{'{id}'}</code> to update) <Cite n={2} />. It needs no Google or Firebase setup, but you carry a token on every device.</p>
 
         <h3>What was tested</h3>
-        <p>16 automated tests cover the merge rules (different edits combine, newest wins, un-checks and reset propagate, merging twice changes nothing) and the sync round trip against a fake GitHub. I also ran two separate browser profiles against a mock of the gist API: a tick in one appeared in the other, and the second one's edits came back. <b>I have not run it against the real GitHub API yet</b>, so your first connection is the real test.</p>
+        <p>Automated tests cover the merge rules (different edits combine, newest wins, un-checks and reset propagate, merging twice changes nothing, two devices syncing in turn converge) and the sync round trip against fakes. The gist path was also run across two real browser profiles against a mock of GitHub's API. <b>The Google path has not been run against a real Firebase project yet</b>, because that needs your project; your first sign-in is the real test.</p>
       </section>
 
       <section id="limits">
         <h2>Limits and risks</h2>
         <ul className="plain">
-          <li><b>A secret gist is not private.</b> GitHub says anyone with the URL can view it, though it is hidden from search unless you are logged in as its author <Cite n={1} />. Do not write employer-confidential or personal details in your notes.</li>
-          <li><b>The token is a password.</b> It is stored only in that browser, in the same <code>localStorage</code>. GitHub recommends fine-grained tokens, calls classic tokens less secure, and recommends an expiration; delete tokens you no longer need <Cite n={3} />. For this site, create a fine-grained token with only the <b>Gists: Read and write</b> account permission and no repository access <Cite n={[2, 3]} />. If GitHub rejects it, fall back to a classic token with only the <code>gist</code> scope. An expired token shows as “token rejected” and sync stops until you replace it.</li>
+          <li><b>Your data is only as private as your rules.</b> Security rules, not the config file, protect Firestore <Cite n={16} />. Use the provided rules, which allow only the signed-in owner to read or write their own document <Cite n={17} />, and add the optional line that restricts writes to your own Google address so strangers cannot use your free quota.</li>
+          <li><b>Authorized domain.</b> Google sign-in only works on domains you list in the Firebase console. Add your site's domain once.</li>
+          <li><b>Free-plan limits.</b> A third-party article lists the free plan at 1 GiB of storage and 50,000 reads and 20,000 writes a day <Cite n={18} />. This tracker uses a tiny fraction, but check Firebase's own pricing page for current numbers.</li>
+          <li><b>Do not store sensitive notes.</b> Notes are stored as plain text in your Firestore database. Keep employer-confidential or personal details out of them.</li>
           <li><b>Device clocks decide “newest”.</b> Timestamps come from each device's clock. A device with a badly wrong clock can win or lose edits wrongly.</li>
-          <li><b>Notes merge as a whole.</b> If you edit the same week's log on two devices within a minute, the later edit replaces the other. It does not blend the text.</li>
-          <li><b>Not instant.</b> A change on one device can take up to about a minute to appear on another unless you switch tabs.</li>
+          <li><b>Notes merge as a whole.</b> If you edit the same week's log on two devices at the same moment, the later edit replaces the other. It does not blend the text.</li>
+          <li><b>Gist option:</b> a secret gist is not private. GitHub says anyone with the URL can view it <Cite n={1} />. The token is a password stored in that browser; GitHub recommends fine-grained tokens, calls classic tokens less secure, and recommends an expiration <Cite n={3} />. For this site, use a fine-grained token with only the <b>Gists: Read and write</b> account permission <Cite n={[2, 3]} />, or a classic token with only the <code>gist</code> scope if GitHub rejects it.</li>
           <li><b>Hosting.</b> The site is published from GitHub Actions; the one-time setting is Settings, Pages, Source: GitHub Actions <Cite n={4} />.</li>
         </ul>
       </section>
