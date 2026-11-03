@@ -1,0 +1,221 @@
+
+# 90-Day AI Platform Engineer Plan
+ · 
+You build one deployed, tested, monitored LLM assistant in 11 weeks, then spend Week 12 applying. It starts tonight, Tue Nov 3, 2026. Each week lists what to do each day, the links you need and what done looks like.
+## Start tonight (Tue Nov 3): a 90-minute kickoff
+By the end of tonight you have a Python project on GitHub with a running FastAPI app and one passing test. You need no Azure account and no API key yet.
+- **10 min, repository:** on your personal GitHub account, create a private repository named `ai-platform-project` with a README that says what you are building. Clone it to your computer.
+- **15 min, environment:** run `python3 --version` (you need 3.10 or newer), then create and activate a virtual environment with `python3 -m venv .venv`. Install the tools with `pip install "fastapi[standard]" pytest httpx`, then save them with `pip freeze &gt; requirements.txt`.
+- **20 min, first API:** create `main.py` with a FastAPI app and one `GET /health` endpoint that returns `{"status": "ok"}`. Start it with `fastapi dev` and open `http://127.0.0.1:8000/docs` to see the automatic documentation.
+- **20 min, first test:** create `tests/test_health.py` that uses FastAPI's `TestClient` to call `/health` and check the status code and body. Run `pytest` until it passes.
+- **10 min, commit:** add a `.gitignore` containing `.venv` and `.env`, then commit and push.
+- **10 min, log:** create `PROGRESS.md` and write the date, what worked and what blocked you.
+**Links for tonight:** [[LINK https://realpython.com/python-virtual-environments-a-complete-guide/|Python virtual environments guide]], [[LINK https://fastapi.tiangolo.com/tutorial/first-steps/|FastAPI first steps]], [[LINK https://fastapi.tiangolo.com/tutorial/testing/|FastAPI testing]], [[LINK https://docs.pytest.org/en/9.0.x/getting-started.html|pytest getting started]].
+**Done when:** `pytest` passes on your machine and the code is visible on GitHub.
+## What changed from the first plan
+You still have 5 hours a week, so the speedup comes from sequencing, not extra hours. The project now finishes in Week 11 instead of Week 12, which leaves a full week to apply.
+- **Gate 1 moves up to Nov 13.** Your quiz score (11 of 12) and your Terraform experience say concepts are not your problem, so the first gate tests the real gap: writing Python from a blank folder.
+- **Deploy by hand, then automate.** In Week 6 you deploy manually to see every step, and in Week 7 you turn those steps into Terraform. This is faster than learning both at once.
+- **Terraform gets one week, not two.** You already own Terraform, so the saved time goes to Python and the LLM work.
+- **Evaluation, cost and monitoring are built in.** Hiring teams for AI platform roles ask how you know the app works and what it costs. You will have numbers for both.
+- **Agent and MCP come last.** They sit on top of a working, deployed base, so they take days, not weeks.
+- **Friday teach-back.** Each Friday, explain what you built that week in 3 minutes out loud, then answer 5 questions from me. If you can't explain it, you haven't learned it yet.
+## Ground rules
+Three rules keep this safe, cheap and honest.
+- **Personal accounts only.** Use your personal GitHub account and a personal Azure subscription. Do not use Kroger code, data, credentials or subscriptions, and build the retrieval app on public documents. If you are unsure whether your employer allows outside projects, check the policy before you start.
+- **Azure credit timing.** Azure free accounts typically include a $200 credit that lasts 30 days, but confirm the current terms when you sign up. That is why you create the account in Week 3, not tonight: the credit then covers Weeks 3 to 7, which is when you deploy the most. After it ends, you pay as you go, so create a budget alert the day you sign up and delete the resource group after each deployment session.
+- **AI tools are your tutor, not your typist.** Use Claude or Copilot to explain errors, review your code and quiz you. Do not paste in whole solutions. If AI wrote a piece of code, you must be able to explain every line of it. Gates 1 and 3 are done with no AI code generation, and docs are allowed.
+Pluralsight through Kroger is a good backup when a concept won't click. Use at most one course per week, and only on that week's topic.
+## Week 1 (Nov 3 to 6): Python project setup, FastAPI and tests
+Build a small, tested web API that will become your LLM app.
+- **Tue (tonight):** do the kickoff above.
+- **Wed:** add a `POST /ask` endpoint that takes a question and returns a placeholder answer. Define the request and response as Pydantic models so FastAPI validates them.
+- **Thu:** write tests for `/ask`: a valid question returns 200, and an empty question returns 422. Keep every test independent of the others.
+- **Fri:** check-in and teach-back. Then spend 30 minutes reading what an embedding is and why it is stored as a vector. This closes the one quiz question you missed.
+**Links:** [[LINK https://fastapi.tiangolo.com/tutorial/first-steps/|FastAPI first steps]], [[LINK https://fastapi.tiangolo.com/tutorial/testing/|FastAPI testing]], [[LINK https://docs.pytest.org/en/9.0.x/getting-started.html|pytest getting started]], [[LINK https://learn.microsoft.com/en-us/azure/search/retrieval-augmented-generation-overview|Azure AI Search RAG overview]] (read the first section only).
+**Done when:** `/health` and `/ask` work, you have at least 4 passing tests, and everything is pushed to GitHub with a README that explains how to run it.
+## Week 2 (Nov 9 to 13): call an LLM from your API, Gate 1
+Make `/ask` return a real model answer, then prove you can rebuild it without help.
+- **Mon:** get API access. The fastest start is an Anthropic Console account with a small amount of API credit and an API key. Install the SDK with `pip install anthropic`, store the key in an environment variable, and send one message from a plain script.
+- **Tue:** call the model from `/ask` with a system prompt and the user's question. Read the key from the environment, never from code.
+- **Wed:** add error handling: a timeout, a retry with a short delay, and a clean error response when the model call fails. Return the answer as structured JSON that matches a Pydantic model.
+- **Thu:** write tests that replace the model call with a fake, so tests never spend money or depend on the network.
+- **Fri, Gate 1:** in a new blank folder, rebuild the endpoint, a test and the model call in 60 minutes. Official docs are allowed, but no tutorials, no copying from your earlier repo and no AI code generation.
+**Links:** [[LINK https://platform.claude.com/docs/en/get-started|Anthropic API quickstart]], [[LINK https://platform.claude.com/docs/en/api/messages/create|Anthropic Messages API reference]], [[LINK https://fastapi.tiangolo.com/tutorial/testing/|FastAPI testing]].
+**Done when:** `/ask` returns a model answer, your tests run offline, and you pass Gate 1. If you miss it, repeat the blank-folder build the next Monday and tell me where you got stuck.
+## Week 3 (Nov 16 to 20): Azure account, embeddings and retrieval
+Turn documents into searchable vectors and prove retrieval finds the right passage, all on your own machine first.
+- **Mon:** create your personal [[LINK https://azure.microsoft.com/free|Azure free account]] and confirm the current credit terms. Immediately create a monthly budget with email alerts at a low limit you choose.
+- **Tue:** in Microsoft Foundry, create a project and deploy an embedding model (check which ones the model catalog offers for your region). Generate embeddings for five sentences from Python and look at what comes back.
+- **Wed:** pick 15 to 30 pages of public documentation, such as Terraform or Azure docs saved as text, and keep the set small. Split them into chunks of about 500 words with a small overlap, and save each chunk with its source name.
+- **Thu:** embed every chunk and save the vectors to a local file. Write a `retrieve(question, k)` function that embeds the question and returns the top `k` chunks by cosine similarity.
+- **Fri:** write 10 test questions, each with the source chunk that should answer it. Count how many `retrieve` gets right, then do the teach-back.
+**Links:** [[LINK https://azure.microsoft.com/free|Azure free account]], [[LINK https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets|Create and manage budgets]], [[LINK https://learn.microsoft.com/en-us/azure/foundry-classic/quickstarts/get-started-code|Foundry quickstart (project, model, chat)]], [[LINK https://learn.microsoft.com/en-us/azure/search/retrieval-augmented-generation-overview|Azure AI Search RAG overview]].
+**Done when:** `retrieve(question, 3)` returns the right source for at least 7 of your 10 test questions, and your budget alert exists.
+## Week 4 (Nov 23 to 27, light week): Azure AI Search
+This is a three-session week because of Thanksgiving. Move your retrieval from a local file to a managed Azure service.
+- **Mon:** create a resource group for the project and an Azure AI Search service in it. Choose the lowest-cost tier, and use a free tier if your subscription offers one, since your data set is small. Read the docs on creating an index and adding vectors to it.
+- **Tue:** create an index with a text field, a source field and a vector field. Upload your chunks and their vectors with the Azure AI Search Python SDK.
+- **Wed:** run vector queries from Python and send your 10 test questions through them. Compare the results with your local `retrieve`. Write down every setting you chose, because Terraform will recreate it in Week 7. Delete the search service if it costs money while idle.
+- **Thu and Fri:** off.
+**Links:** [[LINK https://learn.microsoft.com/en-US/Azure/search|Azure AI Search documentation]] (create a search service, create an index, add vectors, query a vector index), [[LINK https://learn.microsoft.com/en-us/azure/search/retrieval-augmented-generation-overview|Azure AI Search RAG overview]]. An optional preview feature, [[LINK https://learn.microsoft.com/en-us/azure/search/search-get-started-agentic-retrieval|agentic retrieval]], is worth reading about later but is not needed now.
+**Done when:** Azure AI Search answers at least as many of your 10 test questions correctly as your local version, and your settings are written down.
+## Week 5 (Nov 30 to Dec 4): full RAG app and evaluation, Gate 2
+Join retrieval and the model into one app, then measure how good the answers are.
+- **Mon:** make `/ask` retrieve the top 3 chunks from Azure AI Search, put them in the prompt, and tell the model to answer only from that context and to cite the chunk it used.
+- **Tue:** handle weak retrieval. If no chunk is relevant enough, the app should say it does not know instead of guessing. Test this with a question your documents cannot answer.
+- **Wed:** build an evaluation set of 20 questions: 10 answerable, 5 unanswerable and 5 tricky ones whose answer is split across chunks. Write the expected answer or the key facts for each.
+- **Thu:** write `eval.py` that runs all 20 questions, scores each answer pass or fail, and saves the results to a CSV file. Start with a simple check that the key facts appear in the answer.
+- **Fri, Gate 2:** at least 14 of 20 pass (70%), and you can explain, for three failures, whether retrieval, the prompt or the model was at fault.
+**Links:** [[LINK https://learn.microsoft.com/en-us/azure/search/retrieval-augmented-generation-overview|Azure AI Search RAG overview]], [[LINK https://platform.claude.com/docs/en/api/messages/create|Anthropic Messages API reference]].
+**Done when:** `python eval.py` prints a pass rate and writes a CSV, and you pass Gate 2. Weeks 6 to 9 assume this app works, so if you miss the gate, repeat this week instead of moving on.
+## Week 6 (Dec 7 to 11): Docker and a manual deploy to Azure Container Apps
+Deploy by hand first, so Terraform in Week 7 has nothing mysterious in it.
+- **Mon:** write a `Dockerfile` for the app: a slim Python base image, install the requirements, copy the code, start the server. Build it, run it locally, and pass settings in as environment variables.
+- **Tue:** harden the image. Add a `.dockerignore` that excludes `.venv` and `.env`, run the app as a non-root user, and confirm no secret is baked into the image.
+- **Wed:** sign in with `az login`, then deploy to Azure Container Apps from your local source with the `containerapp up` command in the code-to-cloud quickstart. Open the public URL and ask a question.
+- **Thu:** move your settings into Container Apps environment variables and secrets. Add a simple shared-secret header check to `/ask`, because anyone who finds a public URL could spend your model credit. Read the manage-secrets page to see how Key Vault references work.
+- **Fri:** write every command and setting you used into `DEPLOY_NOTES.md`, then delete the resource group with `az group delete` so nothing keeps billing. Do the teach-back.
+**Links:** [[LINK https://docs.docker.com/get-started/part2/|Docker get started]], [[LINK https://learn.microsoft.com/en-us/azure/container-apps/quickstart-code-to-cloud|Container Apps: build and deploy from local source]], [[LINK https://learn.microsoft.com/en-us/azure/container-apps/get-started-existing-container-image|Container Apps: deploy an existing container image]], [[LINK https://learn.microsoft.com/azure/container-apps/manage-secrets|Container Apps: manage secrets]].
+**Done when:** the public URL answered a question, `DEPLOY_NOTES.md` lists every step, and the resource group is deleted.
+## Week 7 (Dec 14 to 18): Terraform, Key Vault and managed identity
+This is the week your existing skills do the heavy lifting. Turn Week 6's manual steps into Terraform, with no secrets in code.
+- **Mon:** skim the Terraform Azure tutorial only for Azure provider setup and authentication, then set up remote state in an Azure Storage account. Look up the current `azurerm` provider version on the Terraform Registry instead of copying the old one in the tutorial.
+- **Tue:** write Terraform for the resource group, a Log Analytics workspace, the Container Apps environment, the container registry and the container app. Use your `DEPLOY_NOTES.md` as the checklist.
+- **Wed:** add a Key Vault and a managed identity for the app, and give that identity the Key Vault Secrets User role. Reference the secret from the container app instead of putting its value in Terraform or in an environment variable.
+- **Thu:** add the Azure AI Search service and the model settings to Terraform. Use variables and outputs so one `terraform.tfvars` file controls everything.
+- **Fri:** run `terraform destroy`, then `terraform apply` from nothing, then ask the app a question. Do the teach-back.
+**Links:** [[LINK https://developer.hashicorp.com/terraform/tutorials/azure-get-started/azure-build|Terraform: build infrastructure on Azure]], [[LINK https://learn.microsoft.com/azure/container-apps/manage-secrets|Container Apps: manage secrets]].
+**Done when:** one `terraform apply` builds everything, the app answers a question, `terraform destroy` removes it all, and no secret value appears in your Terraform files or in git history.
+**Break: Dec 21 to Jan 2.** No studying. Make sure everything is destroyed so nothing bills while you are away.
+## Week 8 (Jan 4 to 8): GitHub Actions deployment, Gate 3
+After the break, spend Monday rebuilding the environment from your own notes. Then make every push test and deploy the app automatically, with no stored passwords.
+- **Mon:** recreate the whole environment with `terraform apply` and confirm the app answers a question. This is also your warm-up after the break.
+- **Tue:** create a workflow that runs `pytest` and your evaluation on every pull request. Fail the check if the tests fail.
+- **Wed:** set up passwordless sign-in from GitHub to Azure using OpenID Connect: create a federated credential on a Microsoft Entra application or a user-assigned managed identity, give it only the role it needs, and store only its IDs as GitHub secrets.
+- **Thu:** add a second workflow that, on a merge to `main`, builds the image, pushes it to the registry and deploys it to Container Apps. Add a `terraform plan` job on pull requests that shows infrastructure changes.
+- **Fri, Gate 3:** merge a small change and watch it deploy by itself. Show that no client secret or API key is stored in GitHub, Terraform files or git history.
+**Links:** [[LINK https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect|Use GitHub Actions to connect to Azure with OpenID Connect]], [[LINK https://developer.hashicorp.com/terraform/tutorials/azure-get-started/azure-build|Terraform: build infrastructure on Azure]].
+**Done when:** merging to `main` deploys the app, the infrastructure can be rebuilt from Terraform, and you pass Gate 3 with no AI code generation for the workflow itself.
+## Week 9 (Jan 11 to 15): monitoring, cost tracking and evaluation in CI
+This is the week that separates an AI project from a demo. You will be able to say how the app performs and what each request costs.
+- **Mon:** create an Application Insights resource in Terraform and add the Azure Monitor OpenTelemetry package (`pip install azure-monitor-opentelemetry`) to the app. Confirm traces and logs appear in the Azure portal.
+- **Tue:** log one structured line per request: a request ID, latency, the retrieved chunk IDs, the number of input and output tokens, and whether the answer was a refusal.
+- **Wed:** estimate the cost of each request from its token counts and the model's current price, and log that too. Add a budget alert in Terraform if you have not already.
+- **Thu:** make the evaluation run in your pull request workflow, and fail the check if the pass rate drops more than 5 points below the last good run.
+- **Fri:** in Log Analytics, write queries that answer three questions: what is the 95th percentile latency, what is the error rate, and what is the cost per day. Do the teach-back.
+**Links:** [[LINK https://learn.microsoft.com/en-us/azure/azure-monitor/app/opentelemetry-enable|Enable Azure Monitor OpenTelemetry]], [[LINK https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets|Create and manage budgets]], [[LINK https://learn.microsoft.com/training/modules/analyze-costs-create-budgets-azure-cost-management|Analyze costs and create budgets (Learn module)]].
+**Done when:** you can answer latency, error rate and cost per day from your own logs, and a change that makes answers worse fails the pull request.
+## Week 10 (Jan 18 to 22): an agent with tool calling
+Let the model decide when to search your documents or call a function, and make that safe and measurable.
+- **Mon:** read the tool use overview and how the request and response loop works: you describe tools, the model asks to call one, your code runs it, and you send the result back.
+- **Tue:** add two tools to your app: `search_docs` (your existing retrieval) and a small second tool, such as one that returns the app's current status or the estimated cost so far.
+- **Wed:** write the agent loop with a maximum number of steps, clean error handling for a failed tool, and a log line for every tool call, including its inputs and the time it took.
+- **Thu:** add guardrails. Allow only the tools you listed, validate every tool input with Pydantic, and never put secrets in a prompt or a tool result.
+- **Fri:** add 5 agent cases to your evaluation set, such as a question that needs a search, one that needs no tool and one that should be refused. Do the teach-back.
+**Links:** [[LINK https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview|Anthropic tool use overview]], [[LINK https://learn.microsoft.com/en-us/azure/foundry-classic/quickstarts/get-started-code|Foundry quickstart]] (it also shows how to create and run an agent in Microsoft Foundry, which is useful for comparison).
+**Done when:** the agent picks the right action on all 5 new evaluation cases, every tool call is logged, and it stops after the step limit instead of looping.
+## Week 11 (Jan 25 to 29): MCP server, polish, Gate 4
+Expose your retrieval to other AI tools through MCP, then make the project easy for a stranger to run and judge.
+- **Mon:** follow the FastMCP tutorial and build a small MCP server that exposes your `search_docs` function as a tool. Read the MCP Python SDK docs to see how the SDK differs from FastMCP.
+- **Tue:** run your server and test it with an MCP client or the MCP Inspector, and confirm a client can list the tool and call it.
+- **Wed:** connect your own agent, or a desktop AI client you use, to the server and ask a question that makes it call your tool.
+- **Thu:** polish the repository. Write a README with a one-paragraph summary, an architecture diagram, run steps, your evaluation results and your cost per request. Record a short demo, and do a security pass: no secrets, least-privilege roles and a deleted unused resource group.
+- **Fri, Gate 4:** ask a friend, or a fresh machine, to run your project from the README alone. Then do a mock interview with me about your design choices.
+**Links:** [[LINK https://gofastmcp.com/tutorials/create-mcp-server|FastMCP: create an MCP server]], [[LINK https://py.sdk.modelcontextprotocol.io/|MCP Python SDK documentation]].
+**Done when:** a client calls your MCP tool successfully, your README works for someone else, and you can explain every design choice in the mock interview.
+## Week 12 (Feb 1 to 5): resume, mock interviews and applications
+Turn the project into interviews. If any gate slipped earlier, use Monday and Tuesday to finish it, then apply Wednesday to Friday.
+- **Mon:** update your resume and LinkedIn. Add the project with measurable results: evaluation pass rate, cost per request, deployment time and the tools used. Keep your real job title and describe your scope in the summary. Pin the repository on GitHub.
+- **Tue:** shortlist 20 roles in three groups: AI platform engineer, cloud platform engineer with AI workloads, and AI automation or integration engineer. Note the requirements that appear most often and compare them with your skills.
+- **Wed:** tailor your resume to your best 5 roles and apply.
+- **Thu:** do two mock interviews with me. The first is a walkthrough of your project's design and trade-offs. The second is a Terraform, Azure and security troubleshooting round.
+- **Fri:** apply to 5 more roles, write down any gaps you heard in the mocks and postings, and decide what the next 90 days should cover.
+**Done when:** 10 applications are submitted, 2 mock interviews are done, and your resume and LinkedIn show the project.
+## All links in one place
+Every link below came up in a search for this plan. Microsoft pages move often, so if one fails, search the page title on the same site.
+Resource
+Weeks
+Use it for
+[[LINK https://realpython.com/python-virtual-environments-a-complete-guide/|Python virtual environments guide]]
+Tonight, 1
+Creating and using a venv
+[[LINK https://fastapi.tiangolo.com/tutorial/first-steps/|FastAPI first steps]]
+Tonight, 1
+Your first API
+[[LINK https://fastapi.tiangolo.com/tutorial/testing/|FastAPI testing]]
+Tonight, 1, 2
+Testing endpoints with TestClient
+[[LINK https://docs.pytest.org/en/9.0.x/getting-started.html|pytest getting started]]
+Tonight, 1
+Writing and running tests
+[[LINK https://platform.claude.com/docs/en/get-started|Anthropic API quickstart]]
+2
+First model call and API key
+[[LINK https://platform.claude.com/docs/en/api/messages/create|Anthropic Messages API reference]]
+2, 5
+Request and response details
+[[LINK https://azure.microsoft.com/free|Azure free account]]
+3
+Creating your personal Azure subscription
+[[LINK https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets|Create and manage budgets]]
+3, 9
+Cost alerts
+[[LINK https://learn.microsoft.com/training/modules/analyze-costs-create-budgets-azure-cost-management|Analyze costs and create budgets]]
+9
+Short Learn module on cost control
+[[LINK https://learn.microsoft.com/en-us/azure/foundry-classic/quickstarts/get-started-code|Foundry quickstart]]
+3, 10
+Project, model deployment, chat and agent
+[[LINK https://learn.microsoft.com/en-US/Azure/search|Azure AI Search documentation]]
+4
+Service, index and vector queries
+[[LINK https://learn.microsoft.com/en-us/azure/search/retrieval-augmented-generation-overview|Azure AI Search RAG overview]]
+1, 3, 4, 5
+How RAG fits together
+[[LINK https://learn.microsoft.com/en-us/azure/search/search-get-started-agentic-retrieval|Agentic retrieval quickstart (preview)]]
+Optional
+Reading only, preview feature
+[[LINK https://docs.docker.com/get-started/part2/|Docker get started]]
+6
+Images and containers
+[[LINK https://learn.microsoft.com/en-us/azure/container-apps/quickstart-code-to-cloud|Container Apps: build and deploy from local source]]
+6
+First manual deployment
+[[LINK https://learn.microsoft.com/en-us/azure/container-apps/get-started-existing-container-image|Container Apps: deploy an existing image]]
+6
+Deploying a built image
+[[LINK https://learn.microsoft.com/azure/container-apps/manage-secrets|Container Apps: manage secrets]]
+6, 7
+Secrets and Key Vault references
+[[LINK https://developer.hashicorp.com/terraform/tutorials/azure-get-started/azure-build|Terraform: build infrastructure on Azure]]
+7, 8
+Azure provider setup (check the current provider version)
+[[LINK https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect|GitHub Actions to Azure with OpenID Connect]]
+8
+Passwordless deployment
+[[LINK https://learn.microsoft.com/en-us/azure/azure-monitor/app/opentelemetry-enable|Azure Monitor OpenTelemetry]]
+9
+Traces and logs
+[[LINK https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview|Anthropic tool use overview]]
+10
+Tool calling loop
+[[LINK https://gofastmcp.com/tutorials/create-mcp-server|FastMCP: create an MCP server]]
+11
+Building your MCP server
+[[LINK https://py.sdk.modelcontextprotocol.io/|MCP Python SDK documentation]]
+11
+Official SDK reference
+[[LINK https://learn.microsoft.com/credentials/certifications/exams/ai-103/|Exam AI-103 page]]
+After
+Certification details and price
+[[LINK https://learn.microsoft.com/credentials/certifications/resources/study-guides/ai-103|AI-103 study guide]]
+After
+Skills measured
+## After the 90 days
+The exam in the first version of this plan, AI-102 (Azure AI Engineer Associate), is no longer available: it retired on June 30, 2026. Its replacement is AI-103, Developing AI Apps and Agents on Azure, which leads to the Azure AI Apps and Agents Developer Associate credential.
+- **AI-103 fits this plan.** It is built around Microsoft Foundry and expects Python and Azure experience, which is exactly what your project builds. Check the [[LINK https://learn.microsoft.com/credentials/certifications/exams/ai-103/|exam page]] for its current status (it was listed as beta when I searched), the price and the languages offered before you book, and use the [[LINK https://learn.microsoft.com/credentials/certifications/resources/study-guides/ai-103|study guide]] as a checklist.
+- **Timing:** keep your original target of spring 2027 for the exam, and use 6 to 8 weeks after Week 12 to prepare. Apply for jobs during those weeks, since the project matters more to employers than the certificate.
+- **Also check:** one non-Microsoft source lists a newer MLOps-focused Microsoft exam (AI-300). Confirm it on Microsoft Learn before you plan around it.
+- **Data engineering:** revisit it after you land an AI platform role, or if the platform path stalls. Your Databricks and pipeline skills would then build on a working cloud base.
+- **Keep the project alive.** Keep the repository tidy, delete idle cloud resources, and add one improvement a month. That gives you something new to talk about in interviews.
