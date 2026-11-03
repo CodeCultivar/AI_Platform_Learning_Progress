@@ -45,6 +45,8 @@ export function describeSyncError(e) {
 export const isQuietAuthError = (e) => e?.code === 'auth/popup-closed-by-user' || e?.code === 'auth/cancelled-popup-request'
 
 export async function initCloud(config) {
+  // Test hook: compiled out of production builds (import.meta.env.DEV is false there).
+  if (import.meta.env.DEV && globalThis.__FAKE_CLOUD__) return (await import('./dev-fake-cloud.js')).fakeCloud()
   const [{ initializeApp }, auth, fs] = await Promise.all([import('firebase/app'), import('firebase/auth'), import('firebase/firestore')])
   const app = initializeApp(config)
   const a = auth.getAuth(app)
@@ -57,6 +59,7 @@ export async function initCloud(config) {
     onUser: (cb) => auth.onAuthStateChanged(a, (u) => cb(u ? { uid: u.uid, email: u.email, name: u.displayName } : null)),
     signIn: () => auth.signInWithPopup(a, new auth.GoogleAuthProvider()),
     signOut: () => auth.signOut(a),
+    deleteData: () => fs.deleteDoc(ref()),
     // read, merge and write inside one transaction so two devices syncing at once cannot overwrite each other
     syncOnce: (local) => {
       const r = ref()

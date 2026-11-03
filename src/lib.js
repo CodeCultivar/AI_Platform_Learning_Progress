@@ -64,6 +64,11 @@ export function mergeStates(a, b) {
   return out
 }
 
+// True if this browser holds any progress, notes or schedule.
+export const hasData = (s) => { const n = normalizeState(s); return Object.keys(n.checked).length > 0 || Object.keys(n.notes).length > 0 || Object.keys(n.settings).length > 0 }
+// On a shared computer, a different Google account must not silently inherit the previous person's local data.
+export const needsAccountChoice = (lastUid, uid, st) => !!lastUid && !!uid && lastUid !== uid && hasData(st)
+
 const stable = (o) => JSON.stringify(o, (_, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([x], [y]) => (x < y ? -1 : 1))) : v))
 export const sameState = (a, b) => stable(normalizeState(a)) === stable(normalizeState(b))
 

@@ -5,10 +5,13 @@ import { Dashboard, Kickoff, Week, Gates, Links, Guide, After, Search } from './
 import SyncPanel from './components/SyncPanel.jsx'
 import Home from './components/Home.jsx'
 import SchedulePanel from './components/SchedulePanel.jsx'
+import AccountChoice from './components/AccountChoice.jsx'
 import { SchedCtx } from './schedule-context.js'
-import { loadState, saveState, pct, weekTaskIds, kickoffIds, taskIds, searchPlan, currentWeek, buildSchedule, mergeStates, normalizeState, resetState, sameState } from './lib.js'
+import { loadState, saveState, pct, weekTaskIds, kickoffIds, taskIds, searchPlan, currentWeek, buildSchedule, mergeStates, normalizeState, resetState, sameState, emptyState, needsAccountChoice } from './lib.js'
 import { loadConfig, saveConfig, clearConfig, syncOnce } from './sync.js'
 import { loadFirebaseConfig, initCloud, describeSyncError, isQuietAuthError } from './sync-cloud.js'
+
+const LAST_UID = 'ai-platform-plan-last-uid'
 
 function useHash() {
   const [h, setH] = useState(window.location.hash || '#/')
@@ -31,11 +34,12 @@ export default function App() {
   const [status, setStatus] = useState({ state: 'off', msg: '', last: null })
   const [showSync, setShowSync] = useState(false)
   const [showSched, setShowSched] = useState(false)
+  const [conflict, setConflict] = useState(null) // a different Google account signed in on a browser holding someone else's data
   const stRef = useRef(st); stRef.current = st
   const cfgRef = useRef(cfg); cfgRef.current = cfg
   const fbRef = useRef(fb); fbRef.current = fb
   const busy = useRef(false); const again = useRef(false)
-  const syncMode = fb.user ? 'google' : cfg ? 'gist' : null
+  const syncMode = fb.user ? (conflict ? null : 'google') : cfg ? 'gist' : null
   const syncModeRef = useRef(syncMode); syncModeRef.current = syncMode
 
   // Firebase is only loaded when the site ships a valid firebase-config.json
@@ -53,6 +57,20 @@ export default function App() {
     })
     return () => { dead = true; off() }
   }, [])
+
+  // remember which account this browser's data belongs to, and ask before mixing two people's data
+  useEffect(() => {
+    if (!fb.user) { setConflict(null); return }
+    let last = null
+    try { last = localStorage.getItem(LAST_UID) } catch { /* storage blocked */ }
+    if (needsAccountChoice(last, fb.user.uid, stRef.current)) { setShowSync(false); setConflict(fb.user) }
+    else { try { localStorage.setItem(LAST_UID, fb.user.uid) } catch { /* ignore */ } }
+  }, [fb.user])
+  const settleAccount = (fresh) => {
+    if (fresh) setSt(emptyState())
+    try { localStorage.setItem(LAST_UID, conflict.uid) } catch { /* ignore */ }
+    setConflict(null)
+  }
 
   // signing in with Google replaces the gist connection so two syncs never run side by side (local data is kept)
   useEffect(() => { if (fb.user && cfg) { clearConfig(); setCfg(null) } }, [fb.user, cfg])
@@ -115,6 +133,12 @@ export default function App() {
     }
   }
   const googleSignOut = async () => { try { await fb.api.signOut() } finally { setStatus({ state: 'off', msg: '', last: null }) } }
+  // erase this account's cloud copy, then sign out so auto-sync cannot upload it again
+  const googleDelete = async () => {
+    try { await fb.api.deleteData(); await fb.api.signOut(); setStatus({ state: 'off', msg: '', last: null }) }
+    catch (e) { setStatus({ state: 'error', msg: describeSyncError(e), last: null }) }
+  }
+  const statusLabel = status.state === 'error' ? 'Sync problem' : status.state === 'syncing' ? 'Syncing…' : 'Synced ✓'
 
   const toggle = (id) => setSt((s) => {
     const checked = { ...s.checked }
@@ -158,7 +182,7 @@ export default function App() {
   else if (route[0] === 'guide') view = <Guide />
   else if (route[0] === 'after') view = <After />
   else if (route[0] === 'dashboard') view = <Dashboard st={st} toggle={toggle} onSchedule={() => setShowSched(true)} />
-  else view = <Home onSchedule={() => setShowSched(true)} />
+  else view = <Home onSchedule={() => setShowSched(true)} canSignIn={fb.phase === 'ready' && !fb.user} onSignIn={googleSignIn} />
 
   const active = (r) => (route[0] === r ? 'active' : '')
   const isWeek = (n) => route[0] === 'week' && Number(route[1]) === n
@@ -195,7 +219,15 @@ export default function App() {
           <button onClick={() => fileRef.current.click()}>Import</button>
           <button onClick={reset} className="danger">Reset</button>
           <button className="sync-btn" onClick={() => setShowSched(true)}>Schedule · {sched.hours} h/week</button>
-          <button className={`sync-btn ${status.state}`} onClick={() => setShowSync(true)}>{syncMode ? (status.state === 'error' ? 'Sync problem' : status.state === 'syncing' ? 'Syncing…' : 'Synced ✓') : 'Sync devices'}</button>
+          {fb.phase === 'ready' && !fb.user && !cfg && (
+            <div className="account">
+              <button className="btn" onClick={googleSignIn}>Sign in with Google to sync</button>
+              <p>One click. Your progress, notes and schedule then stay in step on every device you sign in on.</p>
+              {status.state === 'error' && <p className="sync-status error">{status.msg}</p>}
+            </div>
+          )}
+          {fb.user && <p className="account-line"><b>{fb.user.email}</b></p>}
+          <button className={`sync-btn ${status.state}`} onClick={() => setShowSync(true)}>{fb.user ? `Account · ${syncMode ? statusLabel : 'paused'}` : syncMode ? statusLabel : fb.phase === 'ready' ? 'Other sync options' : 'Sync devices'}</button>
           <input ref={fileRef} type="file" accept="application/json" hidden onChange={importData} />
           <p>{syncMode === 'google' ? 'Progress syncs with your Google account.' : syncMode === 'gist' ? 'Progress syncs through your private gist.' : 'Progress is saved in this browser. Turn on Sync to share it across devices.'}</p>
         </div>
@@ -203,8 +235,9 @@ export default function App() {
       <main id="main">{view}</main>
       {showSched && <SchedulePanel value={st.settings.schedule} onSave={saveSchedule} onClose={() => setShowSched(false)} />}
       {showSync && <SyncPanel active={syncMode} status={status} onSyncNow={runSync} onClose={() => setShowSync(false)}
-        google={{ phase: fb.phase, user: fb.user, error: fb.error, onSignIn: googleSignIn, onSignOut: googleSignOut }}
+        google={{ phase: fb.phase, user: fb.user, error: fb.error, onSignIn: googleSignIn, onSignOut: googleSignOut, onDelete: googleDelete }}
         gist={{ cfg, onConnect: connect, onDisconnect: disconnect }} />}
+      {conflict && <AccountChoice user={conflict} onFresh={() => settleAccount(true)} onMerge={() => settleAccount(false)} onCancel={googleSignOut} />}
     </div>
     </SchedCtx.Provider>
   )

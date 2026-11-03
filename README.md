@@ -10,7 +10,7 @@ A small React site that holds the whole 90-day AI Platform Engineer plan (kickof
 - Gates page for the four checkpoints (Weeks 2, 5, 8 and 11)
 - All links in one filterable table, plus site-wide search
 - Progress and notes are saved in your browser (`localStorage`); Export and Import in the sidebar back them up
-- Optional cross-device sync with Google sign-in (Firebase) or a private GitHub gist (see below)
+- One-click cross-device sync with Google sign-in (Firebase), or a private GitHub gist (see below)
 - Works on phones, supports dark mode, prints cleanly
 
 ## Run it
@@ -30,11 +30,11 @@ The plan holds no calendar dates; they are computed from your schedule settings 
 ## Sync across devices
 Two options, both merge per item (newest edit wins), so edits from different devices combine instead of overwriting each other.
 
-**Google sign-in (recommended).** Progress lives in Cloud Firestore in a Firebase project you own, behind owner-only security rules, and you sign in with Google. Setup takes about 10 minutes, once: see [docs/GOOGLE_SYNC_SETUP.md](docs/GOOGLE_SYNC_SETUP.md). The site reads `public/firebase-config.json` (copy `public/firebase-config.example.json`); until that file exists, the Sync panel shows the setup steps. The config values are public by design; the rules in `firebase/firestore.rules` are what protect your data.
+**Google sign-in (recommended).** Users click **Sign in with Google** and everything syncs automatically: progress, notes and schedule, live across devices. If a different account signs in on a browser holding someone else's progress, the site asks before mixing them, and each user can delete their cloud copy. For this to work the site owner runs one Firebase project (Firestore plus Google sign-in) behind owner-only security rules: a one-time, 10-minute setup in [docs/GOOGLE_SYNC_SETUP.md](docs/GOOGLE_SYNC_SETUP.md). The site reads `public/firebase-config.json` (copy `public/firebase-config.example.json`); without that file the sign-in button is hidden. The config values are public by design; the rules in `firebase/firestore.rules` protect the data. Note that the project owner can technically read what users store.
 
 **GitHub gist.** No Google setup: paste a GitHub token with only the Gists permission and the site keeps one secret gist. A secret gist is unlisted, not private.
 
-Either way it syncs shortly after each edit, when the tab regains focus and every minute (Google also pushes live updates). The Google path has not been run against a real Firebase project by its author; your first sign-in is the real test.
+Either way it syncs shortly after each edit, when the tab regains focus and every minute (Google also pushes live updates). The sign-in flow was tested end to end against a stand-in for Firebase, not a real project; the first real sign-in is the real test.
 
 ## Privacy
 The site is public. Without Sync, your progress never leaves your browser; with Sync it goes only to your own Firestore project or gist. Keep personal or employer details out of your notes if you plan to export and commit them.

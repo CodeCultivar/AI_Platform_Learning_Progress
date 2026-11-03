@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil, mergeStates, sameState, resetState, emptyState, buildSchedule, normalizeSchedule, DEFAULT_SCHEDULE, hoursPerWeek, fmtRange } from './lib.js'
+import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil, mergeStates, sameState, resetState, emptyState, buildSchedule, normalizeSchedule, hasData, needsAccountChoice, DEFAULT_SCHEDULE, hoursPerWeek, fmtRange } from './lib.js'
 import { syncOnce } from './sync.js'
 import { SOURCES } from './data/sources.js'
 import { validFirebaseConfig, loadFirebaseConfig, mergeWithRemote, encodeState, decodeState, describeSyncError } from './sync-cloud.js'
@@ -224,5 +224,16 @@ describe('google/firebase sync logic', () => {
     expect(describeSyncError({ code: 'permission-denied' })).toMatch(/security rules/)
     expect(describeSyncError({ code: 'auth/popup-blocked' })).toMatch(/popup/)
     expect(describeSyncError(new Error('boom'))).toBe('boom')
+  })
+})
+
+describe('account switching on a shared browser', () => {
+  const data = S({ x: true }, {}, { 'c:x': 1 })
+  it('detects local data', () => { expect(hasData(emptyState())).toBe(false); expect(hasData(data)).toBe(true); expect(hasData(S({}, {}, {}))).toBe(false) })
+  it('asks only when a different account meets existing local data', () => {
+    expect(needsAccountChoice('uidA', 'uidB', data)).toBe(true)
+    expect(needsAccountChoice('uidA', 'uidA', data)).toBe(false)   // same person again
+    expect(needsAccountChoice(null, 'uidB', data)).toBe(false)     // offline progress before ever signing in
+    expect(needsAccountChoice('uidA', 'uidB', emptyState())).toBe(false) // nothing to leak
   })
 })

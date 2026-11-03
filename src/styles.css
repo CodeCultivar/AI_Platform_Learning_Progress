@@ -147,3 +147,12 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .tabs { display: flex; gap: 6px; margin: 12px 0 16px; border-bottom: 1px solid var(--line); }
 .tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 12px; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; margin-bottom: -1px; }
 .tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+.account { flex-basis: 100%; background: var(--accent-soft); border-radius: 12px; padding: 10px 12px; }
+.account .btn { width: 100%; border: 0; cursor: pointer; font: inherit; font-weight: 600; }
+.account p { margin: 8px 0 0; font-size: .78rem; color: var(--muted); line-height: 1.4; }
+.account-line { flex-basis: 100%; margin: 0; font-size: .82rem; overflow-wrap: anywhere; }
+.danger-text { color: var(--warn); }
+button.pill { cursor: pointer; font: inherit; font-size: .9rem; }
+
+.modal-back.top { z-index: 30; }

@@ -22,7 +22,7 @@ const ROLES = [
   { role: 'Agentic / AI Automation Engineer', fit: '8.5', demand: 'Fast-growing', pay: 'Widest range', odds: 'Good', stab: 'Lowest' },
 ]
 
-export default function Home({ onSchedule }) {
+export default function Home({ onSchedule, canSignIn, onSignIn }) {
   const sched = useSched()
   const toc = [['what', 'What this is'], ['research', 'The research behind it'], ['sync', 'How sync works'], ['limits', 'Limits and risks'], ['cert', 'Certification'], ['sources', 'All sources']]
   return (
@@ -33,6 +33,7 @@ export default function Home({ onSchedule }) {
         <p className="lede">This site holds the whole plan and tracks your progress through it. This page explains what the plan is built on, how your progress syncs across devices, and where every number came from.</p>
         <div className="gate-row">
           <a className="btn" href="#/dashboard">Open the dashboard</a>
+          {canSignIn && <button className="pill" onClick={onSignIn}>Sign in with Google to sync devices</button>}
         </div>
         <nav className="toc" aria-label="On this page">
           {toc.map(([id, l]) => <a key={id} href={`#${id}`} onClick={jump(id)}>{l}</a>)}
@@ -107,31 +108,33 @@ export default function Home({ onSchedule }) {
         <h3>Without sync: one browser, one copy</h3>
         <p>By default your ticks and notes live in your browser's <code>localStorage</code>. It is kept per site address, survives closing the browser, and never expires on its own <Cite n={5} />. It is cleared when the last private-browsing tab closes, and a browser set to block site data can refuse it entirely <Cite n={5} />. Nothing connects one browser's copy to another's, which is why a second device starts empty.</p>
 
-        <h3>With Google sync (recommended)</h3>
-        <p>You sign in with your Google account, and your progress is stored in a small Firestore database inside a Firebase project that <b>you</b> own. The site talks to Google directly from your browser; nothing passes through a server of mine. There is no token to paste, and signing in on a second device is all it takes.</p>
+        <h3>With Google sign-in (recommended): one click</h3>
+        <p>Click <b>Sign in with Google</b> and you are done. There is nothing to set up and no token to paste. From then on your progress, notes and schedule sync by themselves, and signing in on a second device brings everything with it. The data is stored in a small Firestore database that the site's owner runs; the site talks to Google directly from your browser.</p>
         <ol className="plain steps">
-          <li><b>Sign in.</b> A Google popup confirms who you are. Your copy lives at one path that only your account can read or write, enforced by security rules <Cite n={17} />.</li>
+          <li><b>Sign in.</b> A Google popup confirms who you are. The site only learns your name and email address. Your copy lives at one path that only your account can read or write, enforced by security rules <Cite n={17} />.</li>
+          <li><b>First sync.</b> Whatever you already ticked in this browser is merged with your saved copy, so nothing is lost either way. On a new device the saved copy simply appears.</li>
           <li><b>Stamp every edit.</b> Each tick or note edit records the time it was made, per item.</li>
           <li><b>Merge safely.</b> The site reads the cloud copy, merges it with your local copy (the newest edit per item wins; an un-check is remembered as an edit, so an old tick on another device cannot bring it back; Reset syncs as an edit too) and writes back only if the cloud copy was behind. This happens inside a Firestore transaction, so two devices syncing at the same moment cannot overwrite each other.</li>
           <li><b>Live updates.</b> While the site is open, changes from your other devices arrive within seconds. Your own edits are pushed about 1.5 seconds after you stop typing, and the site re-checks when you return to the tab and once a minute.</li>
         </ol>
         <p>Because the merge is per item, ticking Week 3 on your laptop and Week 4 on your phone leaves both ticks in place. Your schedule settings (start date, pace, breaks) sync the same way, so every device shows the same dates.</p>
-        <p><b>One-time setup:</b> the site needs a Firebase project, which takes about 10 minutes and has no cost on the free plan for something this small <Cite n={18} />. The steps are in <code>docs/GOOGLE_SYNC_SETUP.md</code>, and the Sync panel shows them until the project's config file is added. The config values (including the API key) are public by design: Firebase says its keys are not secrets and that security rules, not the key, control access <Cite n={16} />.</p>
+        <p><b>Shared computers.</b> If a different Google account signs in on a browser that still holds someone else's progress, the site stops and asks first: <i>Start fresh</i> clears the local copy and loads the new account's saved progress, <i>Merge</i> uploads it to the new account, and <i>Sign out</i> does neither. Nothing is uploaded until you choose.</p>
+        <p><b>Your data, honestly.</b> Only your account can reach your copy through the app, but whoever runs the site's Firebase project can technically see everything stored in it, so keep employer-confidential or personal details out of your notes. <b>Delete my cloud data and sign out</b> in the Account panel erases your saved copy; the copy in your browser stays.</p>
+        <p><b>For the site owner (one time, about 10 minutes):</b> create one Firebase project, publish the included security rules and add the project's public config file. The steps are in <code>docs/GOOGLE_SYNC_SETUP.md</code>. The free plan is enough for a tracker this small <Cite n={18} />, and the config values, including the API key, are public by design: Firebase says its keys are not secrets and that security rules control access <Cite n={16} />.</p>
 
         <h3>Alternative: a secret GitHub gist</h3>
         <p>The same merge can run against a <b>secret GitHub gist</b> in your own account instead, using a GitHub token you paste into the site (<code>POST /gists</code> to create, <code>PATCH /gists/{'{id}'}</code> to update) <Cite n={2} />. It needs no Google or Firebase setup, but you carry a token on every device.</p>
 
         <h3>What was tested</h3>
-        <p>Automated tests cover the merge rules (different edits combine, newest wins, un-checks and reset propagate, merging twice changes nothing, two devices syncing in turn converge) and the sync round trip against fakes. The gist path was also run across two real browser profiles against a mock of GitHub's API. <b>The Google path has not been run against a real Firebase project yet</b>, because that needs your project; your first sign-in is the real test.</p>
+        <p>Automated tests cover the merge rules (different edits combine, newest wins, un-checks and reset propagate, merging twice changes nothing, two devices syncing in turn converge) and the sync round trip against fakes. The gist path was also run across two real browser profiles against a mock of GitHub's API. The sign-in flow (one-click sign-in, a second device picking up progress, live updates, switching accounts on a shared browser and deleting cloud data) was run end to end in a browser against a stand-in for Firebase. <b>It has not been run against a real Firebase project yet</b>, because that needs the owner's project; the first real sign-in is the real test.</p>
       </section>
 
       <section id="limits">
         <h2>Limits and risks</h2>
         <ul className="plain">
-          <li><b>Your data is only as private as your rules.</b> Security rules, not the config file, protect Firestore <Cite n={16} />. Use the provided rules, which allow only the signed-in owner to read or write their own document <Cite n={17} />, and add the optional line that restricts writes to your own Google address so strangers cannot use your free quota.</li>
-          <li><b>Authorized domain.</b> Google sign-in only works on domains you list in the Firebase console. Add your site's domain once.</li>
-          <li><b>Free-plan limits.</b> A third-party article lists the free plan at 1 GiB of storage and 50,000 reads and 20,000 writes a day <Cite n={18} />. This tracker uses a tiny fraction, but check Firebase's own pricing page for current numbers.</li>
-          <li><b>Do not store sensitive notes.</b> Notes are stored as plain text in your Firestore database. Keep employer-confidential or personal details out of them.</li>
+          <li><b>The site's operator can see stored data.</b> The security rules stop one user reaching another's copy <Cite n={17} />, but they do not hide data from whoever owns the Firebase project. Keep confidential details out of your notes.</li>
+          <li><b>A shared free quota.</b> Every user draws on the same free-plan limits (a third-party article lists 1 GiB of storage and 50,000 reads and 20,000 writes a day <Cite n={18} />). A tracker uses very little, but if many people sign up, or someone abuses the sign-in, Firebase stops serving the project until the quota resets. Your local progress keeps working. The usual extra protection, Firebase App Check, which controls which apps can reach the database <Cite n={16} />, is not turned on.</li>
+          <li><b>Sign-in only works on authorized domains.</b> The site owner lists the site's address once in the Firebase console; the site then works from that address only.</li>
           <li><b>Device clocks decide “newest”.</b> Timestamps come from each device's clock. A device with a badly wrong clock can win or lose edits wrongly.</li>
           <li><b>Notes merge as a whole.</b> If you edit the same week's log on two devices at the same moment, the later edit replaces the other. It does not blend the text.</li>
           <li><b>Gist option:</b> a secret gist is not private. GitHub says anyone with the URL can view it <Cite n={1} />. The token is a password stored in that browser; GitHub recommends fine-grained tokens, calls classic tokens less secure, and recommends an expiration <Cite n={3} />. For this site, use a fine-grained token with only the <b>Gists: Read and write</b> account permission <Cite n={[2, 3]} />, or a classic token with only the <code>gist</code> scope if GitHub rejects it.</li>
