@@ -156,3 +156,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 button.pill { cursor: pointer; font: inherit; font-size: .9rem; }
 
 .modal-back.top { z-index: 30; }
+
+.tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: .74rem; font-weight: 700; vertical-align: middle; }
+.teachback { margin: 2px 8px 10px 40px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.teachback > summary { cursor: pointer; font-weight: 700; color: var(--accent); }
+.prompt { margin-top: 14px; min-width: 0; }
+.prompt-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.prompt pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0 0; padding: 10px 12px; max-height: 14em; overflow: auto; background: var(--code); border-radius: 8px; font: .84rem/1.5 var(--mono, ui-monospace, monospace); }
+.btn.small { padding: 4px 12px; font-size: .85rem; }
+@media (max-width: 640px) { .teachback { margin-left: 8px; } }
+.btn.small { border: 0; cursor: pointer; font-family: inherit; }

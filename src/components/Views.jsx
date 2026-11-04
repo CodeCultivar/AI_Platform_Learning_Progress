@@ -3,6 +3,7 @@ import plan from '../data/plan.json'
 import { Inline, Blocks, Ring, Bar, Check } from './Inline.jsx'
 import { weekTaskIds, kickoffIds, pct, taskIds, daysUntil, currentWeek, fmtRange, fmtDay, fmtShort } from '../lib.js'
 import { useSched } from '../schedule-context.js'
+import TeachBack from './TeachBack.jsx'
 
 const rangeOf = (sched, n) => { const w = sched.weeks[n - 1]; return fmtRange(w.start, w.end) }
 const breakNote = (sched, n) => { const b = sched.weeks[n - 1].breakDays; return b ? `Includes ${b} break day${b === 1 ? '' : 's'}, so this week runs longer.` : '' }
@@ -102,15 +103,21 @@ function Notes({ keyName, st, setNote }) {
   )
 }
 
+const isTeachBack = (s) => /teach-?back/i.test(s.text)
+
 function Checklist({ plan: u, prefix, st, toggle, doneId }) {
   return (
     <div className="card tasks">
       {u.steps.map((s, i) => {
         const id = `${prefix}${i}`
         return (
-          <Check key={id} id={id} checked={st.checked[id]} onToggle={toggle} gate={!!s.gate}>
-            <b className="lab">{s.label}</b> <Inline text={s.text} />
-          </Check>
+          <div key={id}>
+            <Check id={id} checked={st.checked[id]} onToggle={toggle} gate={!!s.gate}>
+              <b className="lab">{s.label}</b> <Inline text={s.text} />
+              {isTeachBack(s) && <span className="tag">includes teach-back</span>}
+            </Check>
+            {isTeachBack(s) && <TeachBack topic={u.topic} done={u.done} hasReading={/embedding/i.test(s.text)} />}
+          </div>
         )
       })}
       {u.done && (
