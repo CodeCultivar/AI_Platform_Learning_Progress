@@ -1,16 +1,20 @@
 import { useMemo, useState } from 'react'
-import { buildSchedule, normalizeSchedule, DEFAULT_SCHEDULE, PACE_OPTIONS, hoursPerWeek, isIso, fmtDay, fmtRange } from '../lib.js'
+import { buildSchedule, normalizeSchedule, DEFAULT_SCHEDULE, PACE_OPTIONS, hoursPerWeek, paceForHours, isIso, fmtDay, fmtRange } from '../lib.js'
 
 const paceLabel = (p) => `${p === 1 ? '1 week' : `${p} weeks`} each · ~${hoursPerWeek(p)} h/week${p === 1 ? ' (as designed)' : ''}`
 
-export default function SchedulePanel({ value, onSave, onClose }) {
+export default function SchedulePanel({ value, onSave, onClose, signedIn }) {
   const init = normalizeSchedule(value)
   const [start, setStart] = useState(init.start)
   const [weeksPer, setWeeksPer] = useState(init.weeksPer)
   const [breaks, setBreaks] = useState(init.breaks)
+  const [hours, setHours] = useState(String(init.hours ?? hoursPerWeek(init.weeksPer)))
+  const hNum = Number(hours)
+  const hoursOk = hours !== '' && Number.isFinite(hNum) && hNum >= 1 && hNum <= 40
 
   const errors = []
   if (!isIso(start)) errors.push('Pick a start date.')
+  if (!hoursOk) errors.push('Hours per week: enter a number from 1 to 40.')
   breaks.forEach((b, i) => {
     if (!isIso(b.start) || !isIso(b.end)) errors.push(`Break ${i + 1}: fill in both dates.`)
     else if (b.start > b.end) errors.push(`Break ${i + 1}: the end is before the start.`)
@@ -30,8 +34,17 @@ export default function SchedulePanel({ value, onSave, onClose }) {
         <label htmlFor="sc-start">Start date</label>
         <input id="sc-start" className="field" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
 
-        <label htmlFor="sc-pace">Pace: calendar time for each plan week</label>
-        <select id="sc-pace" className="field" value={weeksPer} onChange={(e) => setWeeksPer(Number(e.target.value))}>
+        <label htmlFor="sc-hours">Hours you can study each week</label>
+        <input id="sc-hours" className="field" type="number" inputMode="decimal" min="1" max="40" step="0.5" value={hours}
+          onChange={(e) => { setHours(e.target.value); const n = Number(e.target.value); if (e.target.value !== '' && n >= 1 && n <= 40) setWeeksPer(paceForHours(n)) }} />
+        <p className="muted" style={{ margin: '4px 0 0' }}>
+          {hoursOk
+            ? <>The plan is built for about 5 hours a week. At {hNum} h/week each plan week takes <b>{weeksPer === 1 ? '1 week' : `${weeksPer} weeks`}</b> (about {hoursPerWeek(weeksPer)} h/week){hNum < hoursPerWeek(weeksPer) ? '. That is the slowest pace available, so the load is a little more than you planned.' : '.'}</>
+            : 'Enter how many hours you can realistically give it.'}
+        </p>
+
+        <label htmlFor="sc-pace">Pace (set by your hours; change it to override)</label>
+        <select id="sc-pace" className="field" value={weeksPer} onChange={(e) => { const p = Number(e.target.value); setWeeksPer(p); setHours(String(hoursPerWeek(p))) }}>
           {PACE_OPTIONS.map((p) => <option key={p} value={p}>{paceLabel(p)}</option>)}
         </select>
 
@@ -61,9 +74,11 @@ export default function SchedulePanel({ value, onSave, onClose }) {
           </div>
         )}
 
+        <p className="muted" style={{ margin: '10px 0 0' }}>{signedIn ? 'Signed in: your schedule syncs to your Google account and to your other devices.' : 'Your schedule is saved in this browser. Sign in with Google to sync it across devices.'}</p>
+
         <div className="modal-actions">
-          <button className="btn" disabled={!valid} onClick={() => onSave({ start, weeksPer, breaks })}>Save schedule</button>
-          <button onClick={() => { const d = DEFAULT_SCHEDULE; setStart(d.start); setWeeksPer(d.weeksPer); setBreaks(d.breaks); }}>Use the original dates</button>
+          <button className="btn" disabled={!valid} onClick={() => onSave({ start, weeksPer, breaks, hours: hNum })}>Save schedule</button>
+          <button onClick={() => { const d = DEFAULT_SCHEDULE; setStart(d.start); setWeeksPer(d.weeksPer); setBreaks(d.breaks); setHours(String(hoursPerWeek(d.weeksPer))) }}>Use the original dates</button>
           <button onClick={onClose}>Cancel</button>
         </div>
       </div>

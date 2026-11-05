@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil, mergeStates, sameState, resetState, emptyState, buildSchedule, normalizeSchedule, hasData, needsAccountChoice, DEFAULT_SCHEDULE, hoursPerWeek, fmtRange } from './lib.js'
+import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil, mergeStates, sameState, resetState, emptyState, buildSchedule, normalizeSchedule, hasData, needsAccountChoice, DEFAULT_SCHEDULE, hoursPerWeek, fmtRange, paceForHours } from './lib.js'
 import { syncOnce } from './sync.js'
 import { SOURCES } from './data/sources.js'
 import { validFirebaseConfig, loadFirebaseConfig, mergeWithRemote, encodeState, decodeState, describeSyncError } from './sync-cloud.js'
@@ -57,6 +57,28 @@ describe('schedule', () => {
     expect(currentWeek(s, new Date(2027, 5, 1, 12))).toBe(12)
   })
   it('helpers', () => { expect(hoursPerWeek(2)).toBe(2.5); expect(fmtRange('2026-11-03', '2026-11-08')).toBe('Nov 3 – Nov 8') })
+})
+
+describe('hours-based schedule', () => {
+  it('picks the fastest pace that fits the hours', () => {
+    expect(paceForHours(5)).toBe(1)
+    expect(paceForHours(12)).toBe(0.5)
+    expect(paceForHours(4)).toBe(1.5)
+    expect(paceForHours(2.5)).toBe(2)
+    expect(paceForHours(1)).toBe(4) // slowest available
+  })
+  it('keeps valid hours and drops invalid ones', () => {
+    expect(normalizeSchedule({ ...DEFAULT_SCHEDULE, hours: 7.3 }).hours).toBe(7.5)
+    expect('hours' in normalizeSchedule({ ...DEFAULT_SCHEDULE, hours: 99 })).toBe(false)
+    expect('hours' in normalizeSchedule({ ...DEFAULT_SCHEDULE, hours: 'x' })).toBe(false)
+  })
+  it('a saved schedule with hours reaches another device through the cloud copy', async () => {
+    const { mergeWithRemote, encodeState } = await import('./sync-cloud.js')
+    const a = { ...emptyState(), settings: { schedule: { start: '2026-12-01', weeksPer: 2, breaks: [], hours: 2.5 } }, ts: { 's:schedule': 5000 } }
+    const { merged } = mergeWithRemote(a, undefined)
+    const onPhone = mergeWithRemote(emptyState(), encodeState(merged)).merged
+    expect(onPhone.settings.schedule).toEqual({ start: '2026-12-01', weeksPer: 2, hours: 2.5, breaks: [] })
+  })
 })
 
 describe('schedule settings sync', () => {

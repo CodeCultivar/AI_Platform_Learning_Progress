@@ -218,7 +218,7 @@ export default function App() {
           <button onClick={exportData}>Export</button>
           <button onClick={() => fileRef.current.click()}>Import</button>
           <button onClick={reset} className="danger">Reset</button>
-          <button className="sync-btn" onClick={() => setShowSched(true)}>Schedule · {sched.hours} h/week</button>
+          <button className="sync-btn" onClick={() => setShowSched(true)}>Schedule</button>
           {fb.phase === 'ready' && !fb.user && !cfg && (
             <div className="account">
               <button className="btn" onClick={googleSignIn}>Sign in with Google to sync</button>
@@ -233,7 +233,7 @@ export default function App() {
         </div>
       </aside>
       <main id="main">{view}</main>
-      {showSched && <SchedulePanel value={st.settings.schedule} onSave={saveSchedule} onClose={() => setShowSched(false)} />}
+      {showSched && <SchedulePanel signedIn={!!fb.user} value={st.settings.schedule} onSave={saveSchedule} onClose={() => setShowSched(false)} />}
       {showSync && <SyncPanel active={syncMode} status={status} onSyncNow={runSync} onClose={() => setShowSync(false)}
         google={{ phase: fb.phase, user: fb.user, error: fb.error, onSignIn: googleSignIn, onSignOut: googleSignOut, onDelete: googleDelete }}
         gist={{ cfg, onConnect: connect, onDisconnect: disconnect }} />}

@@ -101,12 +101,16 @@ export const localIso = (d = new Date()) => `${d.getFullYear()}-${String(d.getMo
 export function normalizeSchedule(c) {
   if (!c) return DEFAULT_SCHEDULE
   const wp = Number(c.weeksPer)
+  const h = Number(c.hours)
   return {
     start: isIso(c.start) ? c.start : DEFAULT_SCHEDULE.start,
     weeksPer: PACE_OPTIONS.includes(wp) ? wp : 1,
+    ...(Number.isFinite(h) && h >= 1 && h <= 40 ? { hours: Math.round(h * 2) / 2 } : {}), // hours a week the person said they have
     breaks: (Array.isArray(c.breaks) ? c.breaks : []).filter((b) => isIso(b?.start) && isIso(b?.end) && b.start <= b.end).slice(0, 12).map((b) => ({ start: b.start, end: b.end })),
   }
 }
+// The fastest pace whose weekly load fits in the hours a person has (the slowest pace if even that is too much).
+export const paceForHours = (h) => PACE_OPTIONS.find((p) => 50 / p / 10 <= h + 1e-9) ?? PACE_OPTIONS[PACE_OPTIONS.length - 1]
 export const hoursPerWeek = (weeksPer) => Math.round(50 / weeksPer) / 10 // the plan is designed for 5 hours a week
 
 export function buildSchedule(cfg, n = plan.weeks.length) {
