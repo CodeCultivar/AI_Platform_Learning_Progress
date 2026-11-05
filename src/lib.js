@@ -144,6 +144,35 @@ export function buildSchedule(cfg, n = plan.weeks.length) {
   return { weeks, start: weeks[0].start, end: weeks[weeks.length - 1].end, config: c, hours: hoursPerWeek(c.weeksPer) }
 }
 
+// Working days (Mon-Fri, not in a break) inside a schedule window.
+export function workDays(win, breaks = []) {
+  const out = []
+  for (let d = win.start; d <= win.end; d = addDays(d, 1)) {
+    if (dow(d) >= 1 && dow(d) <= 5 && !breaks.some((b) => d >= b.start && d <= b.end)) out.push(d)
+  }
+  return out.length ? out : [win.start]
+}
+
+const WEEKDAY = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5 }
+// The calendar date a plan step lands on. The step text never changes; only its date does.
+// Inside a one-week window a labelled weekday lands on that weekday. In a longer window the five
+// weekday slots are spread across the window's working days; "Day 1" is always the first day.
+export function stepDate(win, label, breaks = []) {
+  const days = workDays(win, breaks)
+  const m = /\b(Mon|Tue|Wed|Thu|Fri)\b/.exec(label || '')
+  if (!m) return days[0]
+  const wd = WEEKDAY[m[1]]
+  const span = (new Date(toMs(win.end)) - new Date(toMs(win.start))) / DAY + 1
+  if (span <= 7) {
+    const exact = days.find((d) => dow(d) === wd)
+    if (exact) return exact
+    return days.reduce((best, d) => (Math.abs(dow(d) - wd) < Math.abs(dow(best) - wd) ? d : best), days[0])
+  }
+  return days[Math.round(((wd - 1) / 4) * (days.length - 1))]
+}
+
+export const fmtStepDate = (iso) => new Date(toMs(iso)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+
 // Which plan week is "now"? Before the start -> 1; after the end -> last; in a gap/break -> the next week.
 export function currentWeek(sched, today = new Date()) {
   const t = localIso(today)

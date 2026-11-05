@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil, mergeStates, sameState, resetState, emptyState, buildSchedule, normalizeSchedule, hasData, needsAccountChoice, DEFAULT_SCHEDULE, hoursPerWeek, fmtRange, paceForHours } from './lib.js'
+import { parseInline, currentWeek, pct, taskIds, searchPlan, daysUntil, mergeStates, sameState, resetState, emptyState, buildSchedule, normalizeSchedule, hasData, needsAccountChoice, DEFAULT_SCHEDULE, hoursPerWeek, fmtRange, paceForHours, stepDate, workDays } from './lib.js'
 import { syncOnce } from './sync.js'
 import { SOURCES } from './data/sources.js'
 import { validFirebaseConfig, loadFirebaseConfig, mergeWithRemote, encodeState, decodeState, describeSyncError } from './sync-cloud.js'
@@ -57,6 +57,33 @@ describe('schedule', () => {
     expect(currentWeek(s, new Date(2027, 5, 1, 12))).toBe(12)
   })
   it('helpers', () => { expect(hoursPerWeek(2)).toBe(2.5); expect(fmtRange('2026-11-03', '2026-11-08')).toBe('Nov 3 – Nov 8') })
+})
+
+describe('step dates', () => {
+  const s1 = buildSchedule({ start: '2026-11-03', weeksPer: 1, breaks: [] })
+  it('week 1 labels land on their own weekdays', () => {
+    const w = s1.weeks[0]
+    expect(stepDate(w, 'Day 1')).toBe('2026-11-03')
+    expect(stepDate(w, 'Wed')).toBe('2026-11-04')
+    expect(stepDate(w, 'Fri')).toBe('2026-11-06')
+  })
+  it('a normal week maps Mon..Fri onto its Monday..Friday', () => {
+    const w = s1.weeks[1]
+    expect(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((d) => stepDate(w, d))).toEqual(['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13'])
+  })
+  it('a slower pace spreads the same steps across the longer window, in order', () => {
+    const s2 = buildSchedule({ start: '2026-11-03', weeksPer: 2, breaks: [] })
+    const w = s2.weeks[1]
+    const ds = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((d) => stepDate(w, d))
+    expect([...ds].sort()).toEqual(ds)
+    expect(ds[0] < ds[4]).toBe(true)
+    expect(ds.every((d) => d >= w.start && d <= w.end)).toBe(true)
+    expect(ds[4]).toBe(workDays(w).slice(-1)[0])
+  })
+  it('never lands on a break day', () => {
+    const s = buildSchedule({ start: '2026-11-03', weeksPer: 2, breaks: [{ start: '2026-11-16', end: '2026-11-20' }] })
+    for (const w of s.weeks) for (const d of ['Mon', 'Wed', 'Fri']) { const x = stepDate(w, d, s.config.breaks); expect(x >= '2026-11-16' && x <= '2026-11-20').toBe(false) }
+  })
 })
 
 describe('hours-based schedule', () => {

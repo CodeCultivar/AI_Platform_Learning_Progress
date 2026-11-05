@@ -167,3 +167,5 @@ button.pill { cursor: pointer; font: inherit; font-size: .9rem; }
 @media (max-width: 640px) { .teachback { margin-left: 8px; } }
 .btn.small { border: 0; cursor: pointer; font-family: inherit; }
 .card ~ .teachback, .teachback.solo { margin-left: 0; }
+
+.when { display: inline-block; margin: 0 6px 0 4px; padding: 0 7px; border-radius: 6px; background: var(--code); color: var(--muted); font-size: .78rem; font-weight: 600; white-space: nowrap; }

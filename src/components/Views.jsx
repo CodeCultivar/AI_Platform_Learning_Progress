@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import plan from '../data/plan.json'
 import { Inline, Blocks, Ring, Bar, Check } from './Inline.jsx'
-import { weekTaskIds, kickoffIds, pct, taskIds, daysUntil, currentWeek, fmtRange, fmtDay, fmtShort } from '../lib.js'
+import { weekTaskIds, kickoffIds, pct, taskIds, daysUntil, currentWeek, fmtRange, fmtDay, fmtShort, stepDate, workDays, fmtStepDate } from '../lib.js'
 import { useSched } from '../schedule-context.js'
 import TeachBack, { RepoCheck } from './TeachBack.jsx'
 
@@ -105,7 +105,10 @@ function Notes({ keyName, st, setNote }) {
 
 const isTeachBack = (s) => /teach-?back/i.test(s.text)
 
-function Checklist({ plan: u, prefix, st, toggle, doneId }) {
+function Checklist({ plan: u, prefix, st, toggle, doneId, win }) {
+  const sched = useSched()
+  const breaks = sched.config.breaks
+  const when = (label) => (win ? fmtStepDate(stepDate(win, label, breaks)) : '')
   return (
     <div className="card tasks">
       {u.steps.map((s, i) => {
@@ -113,7 +116,7 @@ function Checklist({ plan: u, prefix, st, toggle, doneId }) {
         return (
           <div key={id}>
             <Check id={id} checked={st.checked[id]} onToggle={toggle} gate={!!s.gate}>
-              <b className="lab">{s.label}</b> <Inline text={s.text} />
+              <b className="lab">{s.label}</b>{win && <span className="when">{when(s.label)}</span>} <Inline text={s.text} />
               {isTeachBack(s) && <span className="tag">includes teach-back</span>}
             </Check>
             {isTeachBack(s) && <TeachBack topic={u.topic} done={u.done} hasReading={/embedding/i.test(s.text)} />}
@@ -122,7 +125,7 @@ function Checklist({ plan: u, prefix, st, toggle, doneId }) {
       })}
       {u.done && (
         <Check id={doneId} checked={st.checked[doneId]} onToggle={toggle}>
-          <b className="lab done-lab">Done when</b> <Inline text={u.done} />
+          <b className="lab done-lab">Done when</b>{win && <span className="when">by {fmtStepDate(workDays(win, breaks).slice(-1)[0])}</span>} <Inline text={u.done} />
         </Check>
       )}
     </div>
@@ -152,7 +155,7 @@ export function Kickoff({ st, toggle, setNote }) {
       <h1>{k.title}</h1>
       <p className="lede">{k.summary}</p>
       <Bar value={pct(kickoffIds(), st.checked)} />
-      <Checklist plan={k} prefix="k" doneId="k-done" st={st} toggle={toggle} />
+      <Checklist plan={k} prefix="k" doneId="k-done" st={st} toggle={toggle} win={{ start: sched.start, end: sched.start }} />
       <LinkList links={k.links} />
       <Notes keyName="kickoff" st={st} setNote={setNote} />
     </>
@@ -171,7 +174,7 @@ export function Week({ n, st, toggle, setNote }) {
       <p className="lede"><Inline text={w.summary} /></p>
       {breakNote(sched, w.n) && <p className="note">{breakNote(sched, w.n)}</p>}
       <Bar value={v} />
-      <Checklist plan={w} prefix={`w${w.n}-s`} doneId={`w${w.n}-done`} st={st} toggle={toggle} />
+      <Checklist plan={w} prefix={`w${w.n}-s`} doneId={`w${w.n}-done`} st={st} toggle={toggle} win={sched.weeks[w.n - 1]} />
       <RepoCheck week={w} />
       {w.notes.map((t, i) => <p key={i} className="note"><Inline text={t} /></p>)}
       <LinkList links={w.links} text={w.linksText} />
