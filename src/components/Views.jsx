@@ -3,7 +3,7 @@ import plan from '../data/plan.json'
 import { Inline, Blocks, Ring, Bar, Check } from './Inline.jsx'
 import { weekTaskIds, kickoffIds, pct, taskIds, daysUntil, currentWeek, fmtRange, fmtDay, fmtShort } from '../lib.js'
 import { useSched } from '../schedule-context.js'
-import TeachBack from './TeachBack.jsx'
+import TeachBack, { RepoCheck } from './TeachBack.jsx'
 
 const rangeOf = (sched, n) => { const w = sched.weeks[n - 1]; return fmtRange(w.start, w.end) }
 const breakNote = (sched, n) => { const b = sched.weeks[n - 1].breakDays; return b ? `Includes ${b} break day${b === 1 ? '' : 's'}, so this week runs longer.` : '' }
@@ -172,6 +172,7 @@ export function Week({ n, st, toggle, setNote }) {
       {breakNote(sched, w.n) && <p className="note">{breakNote(sched, w.n)}</p>}
       <Bar value={v} />
       <Checklist plan={w} prefix={`w${w.n}-s`} doneId={`w${w.n}-done`} st={st} toggle={toggle} />
+      <RepoCheck week={w} />
       {w.notes.map((t, i) => <p key={i} className="note"><Inline text={t} /></p>)}
       <LinkList links={w.links} text={w.linksText} />
       <Notes keyName={`week${w.n}`} st={st} setNote={setNote} />
