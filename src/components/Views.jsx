@@ -6,6 +6,8 @@ import { Inline, Blocks, Ring, Bar, Check } from './Inline.jsx'
 import { weekTaskIds, kickoffIds, pct, taskIds, daysUntil, currentWeek, fmtRange, fmtDay, fmtShort, stepDate, workDays, fmtStepDate } from '../lib.js'
 import { useSched } from '../schedule-context.js'
 import TeachBack, { RepoCheck } from './TeachBack.jsx'
+import { PromptKit, checkpointPrompt } from './Prompts.jsx'
+import { Prompt } from './TeachBack.jsx'
 
 const rangeOf = (sched, n) => { const w = sched.weeks[n - 1]; return fmtRange(w.start, w.end) }
 const breakNote = (sched, n) => { const b = sched.weeks[n - 1].breakDays; return b ? `Includes ${b} break day${b === 1 ? '' : 's'}, so this week runs longer.` : '' }
@@ -187,6 +189,7 @@ export function Week({ n, st, toggle, setNote }) {
       <Bar value={v} />
       <Checklist plan={w} prefix={`${P.idp}w${w.n}-s`} doneId={`${P.idp}w${w.n}-done`} st={st} toggle={toggle} win={sched.weeks[w.n - 1]} />
       {P.id === 'ai' && <RepoCheck week={w} />}
+      {P.id === 'de' && <PromptKit week={w} planName={plan.title} repo={!!w.gate || /push|commit|repository|repo\b/i.test(w.steps.map((x) => x.text).join(' '))} />}
       {w.notes.map((t, i) => <p key={i} className="note"><Inline text={t} /></p>)}
       <LinkList links={w.links} text={w.linksText} />
       <QuizCard unit={w.n} bank={P.quiz[P.quizUnitOf(w)] || []} label={`Week ${w.n}`} weekTopic={w.topic} st={st} setNote={setNote} />
@@ -220,6 +223,7 @@ export function Gates({ st, toggle }) {
               <b className="lab">{s.label}</b> <Inline text={s.text} />
             </Check>
             <p className="muted"><b>Week done when:</b> <Inline text={w.done} /></p>
+            <details className="teachback solo"><summary>Prompt for an AI review of this {P.id === 'de' ? 'checkpoint' : 'gate'}</summary><Prompt title="Checkpoint review" hint="Fill in your evidence, paste into a new chat, and send." text={checkpointPrompt(w, `${P.copy.gateWord} ${w.gate}`, plan.title)} /></details>
             <a href={`#/week/${w.n}`}>Open Week {w.n} →</a>
           </div>
         )

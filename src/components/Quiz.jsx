@@ -3,6 +3,9 @@ import { usePlan } from '../plan-context.js'
 import { buildQuiz, gradeQuiz, attemptKey, makeAttempt, attemptsFor, bestAttempt, hasPassed, seenMap, reviewPool, passMarkFor, QUIZ_LEN } from '../quiz.js'
 import { fmtShort } from '../lib.js'
 import { Inline } from './Inline.jsx'
+import { ReviewKit } from './Prompts.jsx'
+import { useSched } from '../schedule-context.js'
+import { currentWeek } from '../lib.js'
 
 const LETTERS = ['A', 'B', 'C', 'D']
 
@@ -110,6 +113,8 @@ export function QuizCard({ unit, bank, label, st, setNote, weekTopic }) {
 export function Tests({ st, setNote }) {
   const P = usePlan()
   const weeks = P.plan.weeks
+  const sched = useSched()
+  const upTo = Math.max(1, currentWeek(sched))
   const pool = useMemo(() => reviewPool(P.quiz, Object.keys(P.quiz).map(Number)), [P])
   const passedCount = weeks.filter((w) => hasPassed(attemptsFor(st.notes, P.id, w.n))).length
   return (
@@ -137,6 +142,7 @@ export function Tests({ st, setNote }) {
         </table>
       </div>
       <ReviewQuiz pool={pool} st={st} setNote={setNote} />
+      <ReviewKit weeks={weeks} planName={P.plan.title} upTo={upTo} />
     </>
   )
 }

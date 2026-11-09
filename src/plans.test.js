@@ -166,3 +166,23 @@ describe('search across a plan', () => {
     expect(r.every((x) => x.to.startsWith('#/'))).toBe(true)
   })
 })
+
+import { quizMePrompt, checkinPrompt, reviewPrompt, checkpointPrompt } from './components/Prompts.jsx'
+describe('tutor prompts', () => {
+  const w = PLANS.de.plan.weeks[15]
+  it('quiz and check-in prompts carry the week, steps and done line, with no markup', () => {
+    for (const t of [quizMePrompt(w, 'X'), checkinPrompt(w, 'X')]) {
+      expect(t).toContain(`Week ${w.n}`)
+      expect(t).toContain('Fri:')
+      expect(t).not.toMatch(/\*\*|\[\[LINK|`/)
+    }
+    expect(quizMePrompt(w, 'X')).toContain('4 of 5')
+  })
+  it('review and checkpoint prompts stay within the weeks covered', () => {
+    const r = reviewPrompt(PLANS.de.plan.weeks, 'X', 3)
+    expect(r).toContain('Week 3:')
+    expect(r).not.toContain('Week 4:')
+    const g = PLANS.de.plan.weeks.find((x) => x.gate)
+    expect(checkpointPrompt(g, 'Checkpoint 1', 'X')).toContain(`Week ${g.n}`)
+  })
+})
