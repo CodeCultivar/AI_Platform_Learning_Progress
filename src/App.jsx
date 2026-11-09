@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import plan from './data/plan.json'
+import { ACTIVE as P } from './plans.js'
+import { PlanCtx } from './plan-context.js'
+import { Tests } from './components/Quiz.jsx'
+import HomeDE from './components/HomeDE.jsx'
+import { quizProgress } from './quiz.js'
 import { Ring } from './components/Inline.jsx'
 import { Dashboard, Kickoff, Week, Gates, Links, Guide, After, Search } from './components/Views.jsx'
 import SyncPanel from './components/SyncPanel.jsx'
@@ -7,11 +11,12 @@ import Home from './components/Home.jsx'
 import SchedulePanel from './components/SchedulePanel.jsx'
 import AccountChoice from './components/AccountChoice.jsx'
 import { SchedCtx } from './schedule-context.js'
-import { loadState, saveState, pct, weekTaskIds, kickoffIds, taskIds, searchPlan, currentWeek, buildSchedule, mergeStates, normalizeState, resetState, sameState, emptyState, needsAccountChoice } from './lib.js'
+import { loadState, saveState, pct, weekTaskIds, kickoffIds, taskIds, searchPlan, currentWeek, buildSchedule, mergeStates, normalizeState, resetPlanState, sameState, emptyState, needsAccountChoice } from './lib.js'
 import { loadConfig, saveConfig, clearConfig, syncOnce } from './sync.js'
 import { loadFirebaseConfig, initCloud, describeSyncError, isQuietAuthError } from './sync-cloud.js'
 
 const LAST_UID = 'ai-platform-plan-last-uid'
+const plan = P.plan
 
 function useHash() {
   const [h, setH] = useState(window.location.hash || '#/')
@@ -36,6 +41,7 @@ export default function App() {
   const [showSched, setShowSched] = useState(false)
   const [conflict, setConflict] = useState(null) // a different Google account signed in on a browser holding someone else's data
   const stRef = useRef(st); stRef.current = st
+  useEffect(() => { saveState(st) }, [st]) // keep progress in this browser even when sync is off
   const cfgRef = useRef(cfg); cfgRef.current = cfg
   const fbRef = useRef(fb); fbRef.current = fb
   const busy = useRef(false); const again = useRef(false)
@@ -152,16 +158,18 @@ export default function App() {
     return { ...s, notes, ts: { ...s.ts, ['n:' + k]: Date.now() } }
   })
 
-  const sched = useMemo(() => buildSchedule(st.settings.schedule), [st.settings.schedule])
-  const saveSchedule = (cfg) => { setSt((s) => ({ ...s, settings: { ...s.settings, schedule: cfg }, ts: { ...s.ts, 's:schedule': Date.now() } })); setShowSched(false) }
-  const results = useMemo(() => searchPlan(q), [q])
+  const sched = useMemo(() => buildSchedule(st.settings[P.settingKey], plan.weeks.length, P.defaultSchedule), [st.settings[P.settingKey]])
+  const saveSchedule = (cfg) => { setSt((s) => ({ ...s, settings: { ...s.settings, [P.settingKey]: cfg }, ts: { ...s.ts, ['s:' + P.settingKey]: Date.now() } })); setShowSched(false) }
+  const results = useMemo(() => searchPlan(q, { plan, base: P.base }), [q])
   const route = hash.replace(/^#\/?/, '').split('/')
   const cw = currentWeek(sched)
-  const total = pct(taskIds(), st.checked)
+  const total = pct(taskIds(plan, P.idp), st.checked)
+  const quizzes = quizProgress(st.notes, P.id, plan.weeks.map((w) => w.n))
+  useEffect(() => { document.title = P.brand + ' progress' }, [])
 
   const exportData = () => {
     const blob = new Blob([JSON.stringify(st, null, 2)], { type: 'application/json' })
-    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'ai-plan-progress.json' })
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `${P.id}-plan-progress.json` })
     a.click(); URL.revokeObjectURL(a.href)
   }
   const importData = (e) => {
@@ -171,48 +179,51 @@ export default function App() {
     })
     e.target.value = ''
   }
-  const reset = () => { if (confirm('Clear all progress and notes in this browser? Export first if you want a backup.')) setSt((cur) => resetState(cur)) }
+  const reset = () => { if (confirm(`Clear all ${P.short} progress, notes and quiz history in this browser? Your schedule is kept. Export first if you want a backup.`)) setSt((cur) => resetPlanState(cur, P.idp)) }
 
   let view
   if (q.trim().length > 0) view = <Search results={results} q={q} />
   else if (route[0] === 'kickoff') view = <Kickoff st={st} toggle={toggle} setNote={setNote} />
   else if (route[0] === 'week') view = <Week n={Number(route[1])} st={st} toggle={toggle} setNote={setNote} />
+  else if (route[0] === 'tests') view = <Tests st={st} setNote={setNote} />
   else if (route[0] === 'gates') view = <Gates st={st} toggle={toggle} />
   else if (route[0] === 'links') view = <Links />
   else if (route[0] === 'guide') view = <Guide />
   else if (route[0] === 'after') view = <After />
   else if (route[0] === 'dashboard') view = <Dashboard st={st} toggle={toggle} onSchedule={() => setShowSched(true)} />
-  else view = <Home onSchedule={() => setShowSched(true)} canSignIn={fb.phase === 'ready' && !fb.user} onSignIn={googleSignIn} />
+  else view = P.id === 'de' ? <HomeDE onSchedule={() => setShowSched(true)} canSignIn={fb.phase === 'ready' && !fb.user} onSignIn={googleSignIn} /> : <Home onSchedule={() => setShowSched(true)} canSignIn={fb.phase === 'ready' && !fb.user} onSignIn={googleSignIn} />
 
   const active = (r) => (route[0] === r ? 'active' : '')
   const isWeek = (n) => route[0] === 'week' && Number(route[1]) === n
 
   return (
+    <PlanCtx.Provider value={P}>
     <SchedCtx.Provider value={sched}>
     <div className="shell">
       <a className="skip" href="#main">Skip to content</a>
       <button className="menu-btn" onClick={() => setMenu(!menu)} aria-expanded={menu} aria-label="Toggle navigation">☰ <span>{total}% done</span></button>
       <aside className={`side ${menu ? 'open' : ''}`}>
-        <a className="brand" href="#/" onClick={() => setQ('')}><span className="logo">✓</span><span>90-Day AI Platform<small>{total}% complete</small></span></a>
+        <a className="brand" href="#/" onClick={() => setQ('')}><span className="logo">✓</span><span>{P.brand}<small>{total}% complete</small></span></a>
         <input className="field" type="search" placeholder="Search the plan…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search the plan" />
         <nav>
           <a className={route[0] === '' || route[0] === undefined ? 'active' : ''} href="#/" onClick={() => setQ('')}>Home</a>
           <a className={active('dashboard')} href="#/dashboard" onClick={() => setQ('')}>Dashboard</a>
           <a className={active('kickoff')} href="#/kickoff" onClick={() => setQ('')}>
-            Kickoff · day 1 <em>{pct(kickoffIds(), st.checked)}%</em>
+            {P.copy.kickoffNav} <em>{pct(kickoffIds(plan, P.idp), st.checked)}%</em>
           </a>
           <p className="nav-h">Weeks</p>
           {plan.weeks.map((w) => (
             <a key={w.n} className={`${isWeek(w.n) ? 'active' : ''} ${w.n === cw ? 'now' : ''}`} href={`#/week/${w.n}`} onClick={() => setQ('')}>
               <span>{w.n}. {w.topic[0].toUpperCase() + w.topic.slice(1)}</span>
-              <Ring value={pct(weekTaskIds(w), st.checked)} size={26} />
+              <Ring value={pct(weekTaskIds(w, P.idp), st.checked)} size={26} />
             </a>
           ))}
           <p className="nav-h">Reference</p>
-          <a className={active('gates')} href="#/gates" onClick={() => setQ('')}>Gates</a>
+          <a className={active('tests')} href="#/tests" onClick={() => setQ('')}>Tests <em>{quizzes.passed}/{quizzes.total}</em></a>
+          <a className={active('gates')} href="#/gates" onClick={() => setQ('')}>{P.id === 'de' ? 'Checkpoints' : 'Gates'}</a>
           <a className={active('links')} href="#/links" onClick={() => setQ('')}>All links</a>
           <a className={active('guide')} href="#/guide" onClick={() => setQ('')}>Rules & structure</a>
-          <a className={active('after')} href="#/after" onClick={() => setQ('')}>After the 90 days</a>
+          <a className={active('after')} href="#/after" onClick={() => setQ('')}>{P.copy.afterNav}</a>
         </nav>
         <div className="tools">
           <button onClick={exportData}>Export</button>
@@ -233,12 +244,13 @@ export default function App() {
         </div>
       </aside>
       <main id="main">{view}</main>
-      {showSched && <SchedulePanel signedIn={!!fb.user} value={st.settings.schedule} onSave={saveSchedule} onClose={() => setShowSched(false)} />}
+      {showSched && <SchedulePanel signedIn={!!fb.user} value={st.settings[P.settingKey]} defaults={P.defaultSchedule} units={plan.weeks.length} parked={st.settings[P.settingKey] ? undefined : P.parkedNote} onSave={saveSchedule} onClose={() => setShowSched(false)} />}
       {showSync && <SyncPanel active={syncMode} status={status} onSyncNow={runSync} onClose={() => setShowSync(false)}
         google={{ phase: fb.phase, user: fb.user, error: fb.error, onSignIn: googleSignIn, onSignOut: googleSignOut, onDelete: googleDelete }}
         gist={{ cfg, onConnect: connect, onDisconnect: disconnect }} />}
       {conflict && <AccountChoice user={conflict} onFresh={() => settleAccount(true)} onMerge={() => settleAccount(false)} onCancel={googleSignOut} />}
     </div>
     </SchedCtx.Provider>
+    </PlanCtx.Provider>
   )
 }

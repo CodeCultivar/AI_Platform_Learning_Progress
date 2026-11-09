@@ -169,3 +169,24 @@ button.pill { cursor: pointer; font: inherit; font-size: .9rem; }
 .card ~ .teachback, .teachback.solo { margin-left: 0; }
 
 .when { display: inline-block; margin: 0 6px 0 4px; padding: 0 7px; border-radius: 6px; background: var(--code); color: var(--muted); font-size: .78rem; font-weight: 600; white-space: nowrap; }
+
+/* ---- quizzes and the parked banner ---- */
+.quiz { margin-top: 18px }
+.quiz-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap }
+.quiz-head h3 { margin: 0 0 4px }
+.quiz-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px }
+.quiz fieldset.q { border: 0; padding: 0; margin: 16px 0 0 }
+.quiz legend { font-weight: 600; padding: 0; margin-bottom: 8px }
+.quiz .qn { color: var(--muted) }
+.quiz .opt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line, rgba(128,128,128,.35)); border-radius: 8px; margin: 6px 0; cursor: pointer }
+.quiz .opt.picked { border-color: var(--accent, #2563eb); background: rgba(37, 99, 235, .08) }
+.quiz .opt input { margin-top: 4px }
+.quiz .result { font-size: 1.1rem }
+.quiz .result.ok { color: var(--ok, #15803d) }
+.quiz .result.bad { color: var(--bad, #b91c1c) }
+.quiz .review { border-left: 4px solid; padding: 4px 12px; margin: 12px 0 }
+.quiz .review.right { border-color: var(--ok, #15803d) }
+.quiz .review.wrong { border-color: var(--bad, #b91c1c) }
+.quiz .review p { margin: 4px 0 }
+.quiz-history { margin-top: 12px }
+.note.parked { margin-bottom: 16px }

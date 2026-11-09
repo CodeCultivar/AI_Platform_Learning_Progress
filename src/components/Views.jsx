@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import plan from '../data/plan.json'
+import { usePlan } from '../plan-context.js'
+import { QuizCard } from './Quiz.jsx'
+import { attemptsFor, hasPassed } from '../quiz.js'
 import { Inline, Blocks, Ring, Bar, Check } from './Inline.jsx'
 import { weekTaskIds, kickoffIds, pct, taskIds, daysUntil, currentWeek, fmtRange, fmtDay, fmtShort, stepDate, workDays, fmtStepDate } from '../lib.js'
 import { useSched } from '../schedule-context.js'
@@ -9,28 +11,33 @@ const rangeOf = (sched, n) => { const w = sched.weeks[n - 1]; return fmtRange(w.
 const breakNote = (sched, n) => { const b = sched.weeks[n - 1].breakDays; return b ? `Includes ${b} break day${b === 1 ? '' : 's'}, so this week runs longer.` : '' }
 
 export function Dashboard({ st, toggle, onSchedule }) {
+  const P = usePlan()
+  const plan = P.plan
   const sched = useSched()
-  const all = taskIds()
+  const all = taskIds(plan, P.idp)
   const total = pct(all, st.checked)
   const doneCount = all.filter((id) => st.checked[id]).length
   const cw = currentWeek(sched)
   const week = plan.weeks.find((w) => w.n === cw)
-  const next = [...week.steps.map((s, i) => ({ id: `w${week.n}-s${i}`, s })), { id: `w${week.n}-done`, s: { label: 'Done when', text: week.done } }].filter((t) => !st.checked[t.id])
-  const kPct = pct(kickoffIds(), st.checked)
+  const next = [...week.steps.map((s, i) => ({ id: `${P.idp}w${week.n}-s${i}`, s })), { id: `${P.idp}w${week.n}-done`, s: { label: 'Done when', text: week.done } }].filter((t) => !st.checked[t.id])
+  const kPct = pct(kickoffIds(plan, P.idp), st.checked)
   const gates = plan.weeks.filter((w) => w.gate)
   const start = daysUntil(sched.start)
   const end = daysUntil(sched.end)
+  const quizzesPassed = plan.weeks.filter((w) => hasPassed(attemptsFor(st.notes, P.id, w.n))).length
 
   return (
     <>
+      {P.parkedNote && !st.settings[P.settingKey] && <p className="note parked" role="note">{P.parkedNote}{' '}<button className="linklike" onClick={onSchedule}>Set my start date</button></p>}
       <header className="hero">
         <p className="eyebrow">{fmtDay(sched.start)} → {fmtDay(sched.end)}</p>
         <h1>{plan.title}</h1>
         <p className="lede">{plan.intro}</p>
         <div className="stats">
           <div><b>{total}%</b><span>{doneCount} of {all.length} tasks</span></div>
-          <div><b>{cw}</b><span>current week of 12</span></div>
-          <div><b>{Object.keys(st.checked).filter((k) => /^w\d+-done$/.test(k) && st.checked[k]).length}</b><span>weeks finished</span></div>
+          <div><b>{cw}</b><span>current week of {plan.weeks.length}</span></div>
+          <div><b>{Object.keys(st.checked).filter((k) => k.startsWith(P.idp) && /^w\d+-done$/.test(k.slice(P.idp.length)) && st.checked[k]).length}</b><span>weeks finished</span></div>
+          <div><b>{quizzesPassed}</b><span>of {plan.weeks.length} quizzes passed</span></div>
           <div><b>{end > 0 ? end : 0}</b><span>days until {fmtShort(sched.end)}{start > 0 ? ` (starts in ${start}d)` : ''}</span></div>
         </div>
         <Bar value={total} />
@@ -39,9 +46,9 @@ export function Dashboard({ st, toggle, onSchedule }) {
 
       {kPct < 100 && (
         <section className="callout">
-          <h2>Start here: the 90-minute kickoff</h2>
-          <p>90 minutes. A Python project on GitHub, a running FastAPI app, one passing test. <b>{kPct}%</b> done.</p>
-          <a className="btn" href="#/kickoff">Open the kickoff checklist</a>
+          <h2>{P.copy.kickoffTitle}</h2>
+          <p>{P.copy.kickoffBlurb} <b>{kPct}%</b> done.</p>
+          <a className="btn" href="#/kickoff">Open the {P.id === 'de' ? 'setup' : 'kickoff'} checklist</a>
         </section>
       )}
 
@@ -64,15 +71,15 @@ export function Dashboard({ st, toggle, onSchedule }) {
       </section>
 
       <section>
-        <h2>All 12 weeks</h2>
+        <h2>All {plan.weeks.length} weeks</h2>
         <div className="grid">
           {plan.weeks.map((w) => {
-            const v = pct(weekTaskIds(w), st.checked)
+            const v = pct(weekTaskIds(w, P.idp), st.checked)
             return (
               <a key={w.n} className={`card week-card ${w.n === cw ? 'now' : ''}`} href={`#/week/${w.n}`}>
                 <Ring value={v} />
                 <div>
-                  <small>Week {w.n} · {rangeOf(sched, w.n)}{w.gate ? ` · Gate ${w.gate}` : ''}</small>
+                  <small>Week {w.n} · {rangeOf(sched, w.n)}{w.gate ? ` · ${P.copy.gateWord} ${w.gate}` : ''}</small>
                   <strong>{w.topic}</strong>
                 </div>
               </a>
@@ -82,11 +89,11 @@ export function Dashboard({ st, toggle, onSchedule }) {
       </section>
 
       <section>
-        <div className="row-head"><h2>Gates</h2><a href="#/gates">Details →</a></div>
+        <div className="row-head"><h2>{P.id === 'de' ? 'Checkpoints' : 'Gates'}</h2><a href="#/gates">Details →</a></div>
         <div className="gate-row">
           {gates.map((w) => {
-            const id = `w${w.n}-s${w.steps.findIndex((s) => s.gate)}`
-            return <a key={w.gate} href="#/gates" className={`pill ${st.checked[id] ? 'pass' : ''}`}>Gate {w.gate} · Wk {w.n} · {st.checked[id] ? 'passed' : 'pending'}</a>
+            const id = `${P.idp}w${w.n}-s${w.steps.findIndex((s) => s.gate)}`
+            return <a key={w.gate} href="#/gates" className={`pill ${st.checked[id] ? 'pass' : ''}`}>{P.copy.gateWord} {w.gate} · Wk {w.n} · {st.checked[id] ? 'passed' : 'pending'}</a>
           })}
         </div>
       </section>
@@ -147,60 +154,67 @@ function LinkList({ links, text }) {
 }
 
 export function Kickoff({ st, toggle, setNote }) {
+  const P = usePlan()
+  const plan = P.plan
   const sched = useSched()
   const k = plan.kickoff
   return (
     <>
-      <p className="eyebrow">Day 1 ({fmtDay(sched.start)}) · 90 minutes</p>
+      <p className="eyebrow">{P.copy.kickoffEyebrow(fmtDay(sched.start))}</p>
       <h1>{k.title}</h1>
       <p className="lede">{k.summary}</p>
-      <Bar value={pct(kickoffIds(), st.checked)} />
-      <Checklist plan={k} prefix="k" doneId="k-done" st={st} toggle={toggle} win={{ start: sched.start, end: sched.start }} />
+      <Bar value={pct(kickoffIds(plan, P.idp), st.checked)} />
+      <Checklist plan={k} prefix={`${P.idp}k`} doneId={`${P.idp}k-done`} st={st} toggle={toggle} win={P.copy.kickoffDates ? { start: sched.start, end: sched.start } : undefined} />
       <LinkList links={k.links} />
-      <Notes keyName="kickoff" st={st} setNote={setNote} />
+      <Notes keyName={`${P.idp}kickoff`} st={st} setNote={setNote} />
     </>
   )
 }
 
 export function Week({ n, st, toggle, setNote }) {
+  const P = usePlan()
+  const plan = P.plan
   const sched = useSched()
   const w = plan.weeks.find((x) => x.n === n)
   if (!w) return <p>No such week. <a href="#/">Back to dashboard</a></p>
-  const v = pct(weekTaskIds(w), st.checked)
+  const v = pct(weekTaskIds(w, P.idp), st.checked)
   return (
     <>
-      <p className="eyebrow">Week {w.n} of 12 · {rangeOf(sched, w.n)}{w.light ? ' · light week' : ''}{w.gate ? ` · Gate ${w.gate}` : ''}</p>
+      <p className="eyebrow">Week {w.n} of {plan.weeks.length} · {rangeOf(sched, w.n)}{w.light ? ' · light week' : ''}{w.gate ? ` · ${P.copy.gateWord} ${w.gate}` : ''}</p>
       <h1>{w.topic[0].toUpperCase() + w.topic.slice(1)}</h1>
       <p className="lede"><Inline text={w.summary} /></p>
       {breakNote(sched, w.n) && <p className="note">{breakNote(sched, w.n)}</p>}
       <Bar value={v} />
-      <Checklist plan={w} prefix={`w${w.n}-s`} doneId={`w${w.n}-done`} st={st} toggle={toggle} win={sched.weeks[w.n - 1]} />
-      <RepoCheck week={w} />
+      <Checklist plan={w} prefix={`${P.idp}w${w.n}-s`} doneId={`${P.idp}w${w.n}-done`} st={st} toggle={toggle} win={sched.weeks[w.n - 1]} />
+      {P.id === 'ai' && <RepoCheck week={w} />}
       {w.notes.map((t, i) => <p key={i} className="note"><Inline text={t} /></p>)}
       <LinkList links={w.links} text={w.linksText} />
-      <Notes keyName={`week${w.n}`} st={st} setNote={setNote} />
+      <QuizCard unit={w.n} bank={P.quiz[P.quizUnitOf(w)] || []} label={`Week ${w.n}`} weekTopic={w.topic} st={st} setNote={setNote} />
+      <Notes keyName={`${P.idp}week${w.n}`} st={st} setNote={setNote} />
       <nav className="pager">
-        {n > 1 ? <a href={`#/week/${n - 1}`}>← Week {n - 1}</a> : <a href="#/kickoff">← Kickoff</a>}
-        {n < 12 ? <a href={`#/week/${n + 1}`}>Week {n + 1} →</a> : <a href="#/after">After the 90 days →</a>}
+        {n > 1 ? <a href={`#/week/${n - 1}`}>← Week {n - 1}</a> : <a href="#/kickoff">← {P.id === 'de' ? 'Setup' : 'Kickoff'}</a>}
+        {n < plan.weeks.length ? <a href={`#/week/${n + 1}`}>Week {n + 1} →</a> : <a href="#/after">{P.copy.afterNav} →</a>}
       </nav>
     </>
   )
 }
 
 export function Gates({ st, toggle }) {
+  const P = usePlan()
+  const plan = P.plan
   const sched = useSched()
   const gates = plan.weeks.filter((w) => w.gate)
   return (
     <>
-      <h1>Gates</h1>
-      <p className="lede">Four checkpoints. If you miss one, repeat that week before moving on. The later weeks assume the earlier ones work.</p>
+      <h1>{P.id === 'de' ? 'Checkpoints' : 'Gates'}</h1>
+      <p className="lede">{P.copy.gatesIntro}</p>
       {gates.map((w) => {
         const idx = w.steps.findIndex((s) => s.gate)
-        const id = `w${w.n}-s${idx}`
+        const id = `${P.idp}w${w.n}-s${idx}`
         const s = w.steps[idx]
         return (
           <div key={w.gate} className={`card gate-card ${st.checked[id] ? 'pass' : ''}`}>
-            <small>Gate {w.gate} · Week {w.n} · {rangeOf(sched, w.n)}</small>
+            <small>{P.copy.gateWord} {w.gate} · Week {w.n} · {rangeOf(sched, w.n)}</small>
             <h3>{w.topic}</h3>
             <Check id={id} checked={st.checked[id]} onToggle={toggle} gate>
               <b className="lab">{s.label}</b> <Inline text={s.text} />
@@ -215,13 +229,15 @@ export function Gates({ st, toggle }) {
 }
 
 export function Links() {
+  const P = usePlan()
+  const plan = P.plan
   const [q, setQ] = useState('')
   const rows = plan.links.filter((l) => (l.label + l.use + l.weeks).toLowerCase().includes(q.toLowerCase()))
   return (
     <>
       <h1>All links</h1>
       <p className="lede">{plan.linksNote}</p>
-      <input className="field" type="search" placeholder="Filter links (docker, terraform, week 6…)" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Filter links" />
+      <input className="field" type="search" placeholder={P.copy.linksFilter} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Filter links" />
       <div className="card table-wrap">
         <table>
           <thead><tr><th>Resource</th><th>Weeks</th><th>Use it for</th></tr></thead>
@@ -242,6 +258,8 @@ export function Links() {
 }
 
 export function Guide() {
+  const P = usePlan()
+  const plan = P.plan
   return (
     <>
       <h1>How this plan works</h1>
@@ -252,6 +270,8 @@ export function Guide() {
 }
 
 export function After() {
+  const P = usePlan()
+  const plan = P.plan
   return (
     <>
       <h1>{plan.after.title}</h1>

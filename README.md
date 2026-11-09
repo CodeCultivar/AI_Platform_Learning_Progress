@@ -11,6 +11,7 @@ A small React site that holds the whole 90-day AI Platform Engineer plan (kickof
 - All links in one filterable table, plus site-wide search
 - Progress and notes are saved in your browser (`localStorage`); Export and Import in the sidebar back them up
 - One-click cross-device sync with Google sign-in (Firebase), or a private GitHub gist (see below)
+- Weekly quizzes: 5 questions drawn from a bank of 7 to 16, pass with 4, missed questions come back first, attempt history synced like your notes, plus a Tests page with a mixed review
 - Works on phones, supports dark mode, prints cleanly
 
 ## Run it
@@ -21,7 +22,19 @@ npm test         # data and helper tests
 npm run build    # static site in dist/
 ```
 
+## Two plans, two sites
+The same code builds two sites, chosen by the `VITE_PLAN` environment variable: `ai` (default, this repo) or `de` (the 40-week Data Engineer plan, repo `Data_Engineer_Learning_Progress`).
+```bash
+npm run build        # AI plan
+npm run build:de     # Data Engineer plan
+```
+Both sites live on the same GitHub Pages origin, so they share one browser store and one sync document. Task ids, note keys, quiz history and the schedule setting of the data engineering plan are all prefixed `de:` (or `schedule-de`), so nothing collides, and Reset on either site clears only that plan's progress, notes and quiz history (never a schedule).
+
+## Quizzes
+Questions live in `src/data/ai-quiz.js` (one bank per plan week) and `src/data/de-quiz.js` (one bank per two-week block). Each entry is `q(question, [right answer, wrong, wrong, wrong], why)`; the right answer is written first and the engine shuffles. The questions were written for these plans, not taken from any exam. Each finished attempt is saved as a note `qz:<plan>:<week>:<timestamp>`, so history syncs without changing the sync format or the Firestore rules.
+
 ## Edit the plan
+The data engineering plan is plain JavaScript: weekly steps in `src/data/de-weeks.js`, links and the surrounding text in `src/data/de-plan.js`.
 The plan holds no calendar dates; they are computed from your schedule settings in `src/lib.js` (`buildSchedule`). The content lives in `src/data/plan.json`. It was generated from `scripts/plan-source.txt` by `scripts/build-plan.py` (`python3 scripts/build-plan.py`). Edit either one; the JSON is what the app reads.
 
 ## Publish on GitHub Pages

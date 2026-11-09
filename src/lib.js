@@ -2,22 +2,23 @@ import plan from './data/plan.json'
 
 export const STORE_KEY = 'ai-platform-plan-progress-v1'
 
-// Every checkable thing in the plan gets a stable id.
-export function taskIds() {
+// Every checkable thing in the plan gets a stable id. The AI plan's ids have no prefix (so existing progress
+// keeps working); every other plan prefixes its ids (idp, e.g. 'de:') so two plans share one saved state.
+export function taskIds(p = plan, idp = '') {
   const ids = []
-  plan.kickoff.steps.forEach((_, i) => ids.push(`k${i}`))
-  ids.push('k-done')
-  plan.weeks.forEach((w) => {
-    w.steps.forEach((_, i) => ids.push(`w${w.n}-s${i}`))
-    ids.push(`w${w.n}-done`)
+  p.kickoff.steps.forEach((_, i) => ids.push(`${idp}k${i}`))
+  ids.push(`${idp}k-done`)
+  p.weeks.forEach((w) => {
+    w.steps.forEach((_, i) => ids.push(`${idp}w${w.n}-s${i}`))
+    ids.push(`${idp}w${w.n}-done`)
   })
   return ids
 }
 
-export function weekTaskIds(w) {
-  return [...w.steps.map((_, i) => `w${w.n}-s${i}`), `w${w.n}-done`]
+export function weekTaskIds(w, idp = '') {
+  return [...w.steps.map((_, i) => `${idp}w${w.n}-s${i}`), `${idp}w${w.n}-done`]
 }
-export const kickoffIds = () => [...plan.kickoff.steps.map((_, i) => `k${i}`), 'k-done']
+export const kickoffIds = (p = plan, idp = '') => [...p.kickoff.steps.map((_, i) => `${idp}k${i}`), `${idp}k-done`]
 
 export function pct(ids, checked) {
   if (!ids.length) return 0
@@ -98,12 +99,12 @@ const dow = (iso) => new Date(toMs(iso)).getUTCDay() // 0 = Sunday
 export const isIso = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x) && toIso(toMs(x)) === x
 export const localIso = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-export function normalizeSchedule(c) {
-  if (!c) return DEFAULT_SCHEDULE
+export function normalizeSchedule(c, defaults = DEFAULT_SCHEDULE) {
+  if (!c) return defaults
   const wp = Number(c.weeksPer)
   const h = Number(c.hours)
   return {
-    start: isIso(c.start) ? c.start : DEFAULT_SCHEDULE.start,
+    start: isIso(c.start) ? c.start : defaults.start,
     weeksPer: PACE_OPTIONS.includes(wp) ? wp : 1,
     ...(Number.isFinite(h) && h >= 1 && h <= 40 ? { hours: Math.round(h * 2) / 2 } : {}), // hours a week the person said they have
     breaks: (Array.isArray(c.breaks) ? c.breaks : []).filter((b) => isIso(b?.start) && isIso(b?.end) && b.start <= b.end).slice(0, 12).map((b) => ({ start: b.start, end: b.end })),
@@ -113,8 +114,8 @@ export function normalizeSchedule(c) {
 export const paceForHours = (h) => PACE_OPTIONS.find((p) => 50 / p / 10 <= h + 1e-9) ?? PACE_OPTIONS[PACE_OPTIONS.length - 1]
 export const hoursPerWeek = (weeksPer) => Math.round(50 / weeksPer) / 10 // the plan is designed for 5 hours a week
 
-export function buildSchedule(cfg, n = plan.weeks.length) {
-  const c = normalizeSchedule(cfg)
+export function buildSchedule(cfg, n = plan.weeks.length, defaults = DEFAULT_SCHEDULE) {
+  const c = normalizeSchedule(cfg, defaults)
   const whole = Number.isInteger(c.weeksPer)
   const inBreak = (iso) => c.breaks.find((b) => iso >= b.start && iso <= b.end)
   const breakDaysIn = (a, b) => { let k = 0; for (let d = a; d <= b; d = addDays(d, 1)) if (inBreak(d)) k++; return k }
@@ -215,30 +216,47 @@ export function plainText(text) {
   return parseInline(text).map((p) => p.v).join('')
 }
 
-export function searchPlan(q) {
+// P is a plan definition from plans.js ({ plan, base }); it defaults to the AI plan so older callers keep working.
+export function searchPlan(q, P = { plan, base: '#' }) {
+  const pl = P.plan
+  const b = P.base
   const needle = q.trim().toLowerCase()
   if (needle.length < 2) return []
   const hits = []
   const test = (s) => plainText(s).toLowerCase().includes(needle)
-  plan.kickoff.steps.forEach((s, i) => {
-    if (test(s.label + ' ' + s.text)) hits.push({ kind: 'Kickoff', title: s.label, text: s.text, to: '#/kickoff' })
+  pl.kickoff.steps.forEach((s) => {
+    if (test(s.label + ' ' + s.text)) hits.push({ kind: 'Kickoff', title: s.label, text: s.text, to: `${b}/kickoff` })
   })
-  plan.weeks.forEach((w) => {
-    if (test(w.title + ' ' + w.summary)) hits.push({ kind: `Week ${w.n}`, title: w.topic, text: w.summary, to: `#/week/${w.n}` })
+  pl.weeks.forEach((w) => {
+    if (test(w.title + ' ' + w.summary)) hits.push({ kind: `Week ${w.n}`, title: w.topic, text: w.summary, to: `${b}/week/${w.n}` })
     w.steps.forEach((s) => {
-      if (test(s.label + ' ' + s.text)) hits.push({ kind: `Week ${w.n}`, title: s.label, text: s.text, to: `#/week/${w.n}` })
+      if (test(s.label + ' ' + s.text)) hits.push({ kind: `Week ${w.n}`, title: s.label, text: s.text, to: `${b}/week/${w.n}` })
     })
   })
-  plan.links.forEach((l) => {
-    if (test(l.label + ' ' + l.use + ' ' + l.url)) hits.push({ kind: 'Link', title: l.label, text: l.use, to: '#/links' })
+  pl.links.forEach((l) => {
+    if (test(l.label + ' ' + l.use + ' ' + l.url)) hits.push({ kind: 'Link', title: l.label, text: l.use, to: `${b}/links` })
   })
-  ;[plan.changed, plan.rules, plan.after].forEach((sec) => {
-    sec.blocks.forEach((b) => {
-      const texts = b.t === 'ul' ? b.items : [b.text]
+  ;[pl.changed, pl.rules, pl.after].forEach((sec) => {
+    sec.blocks.forEach((blk) => {
+      const texts = blk.t === 'ul' ? blk.items : [blk.text]
       texts.forEach((x) => {
-        if (test(x)) hits.push({ kind: 'Guide', title: sec.title, text: x, to: sec === plan.after ? '#/after' : '#/guide' })
+        if (test(x)) hits.push({ kind: 'Guide', title: sec.title, text: x, to: sec === pl.after ? `${b}/after` : `${b}/guide` })
       })
     })
   })
   return hits.slice(0, 30)
+}
+
+/** Does a checked-id, note key or setting key belong to the plan with this id prefix ('' = the AI plan, 'de:' = data engineering)? */
+export function inPlan(key, idp = '') {
+  const de = key.startsWith('de:') || key.startsWith('qz:de:') || key === 'schedule-de'
+  return idp === 'de:' ? de : !de
+}
+
+/** Like resetState, but only clears the progress, notes and quiz history of one plan (the other plan and every schedule are kept). */
+export function resetPlanState(st, idp = '', now = Date.now()) {
+  const out = { ...st, checked: { ...st.checked }, dates: { ...st.dates }, notes: { ...st.notes }, ts: { ...st.ts } }
+  Object.keys(st.checked).filter((k) => inPlan(k, idp)).forEach((k) => { delete out.checked[k]; delete out.dates[k]; out.ts['c:' + k] = now })
+  Object.keys(st.notes).filter((k) => inPlan(k, idp)).forEach((k) => { delete out.notes[k]; out.ts['n:' + k] = now })
+  return out
 }
